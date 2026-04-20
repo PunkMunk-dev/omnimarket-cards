@@ -1,0 +1,361 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Clean light background */
+    --background: 220 14% 96%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    /* Blue primary */
+    --primary: 224 76% 48%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 14% 92%;
+    --secondary-foreground: 222 47% 20%;
+
+    --muted: 220 14% 94%;
+    --muted-foreground: 220 9% 46%;
+
+    /* Accent — teal/mint */
+    --accent: 168 76% 42%;
+    --accent-foreground: 0 0% 100%;
+
+    /* Red for destructive */
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 13% 88%;
+    --input: 220 13% 88%;
+    --ring: 224 76% 48%;
+
+    --radius: 0.5rem;
+
+    /* Semantic marketplace colors */
+    --auction: 25 95% 53%;
+    --auction-foreground: 0 0% 100%;
+    --buy-now: 152 60% 40%;
+    --buy-now-foreground: 0 0% 100%;
+    --price: 222 47% 11%;
+    --shipping: 220 9% 46%;
+
+    --success: 152 60% 40%;
+    --success-foreground: 0 0% 100%;
+
+    /* Sidebar */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 222 47% 20%;
+    --sidebar-primary: 224 76% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 168 76% 92%;
+    --sidebar-accent-foreground: 168 76% 20%;
+    --sidebar-border: 220 13% 90%;
+    --sidebar-ring: 224 76% 48%;
+
+    /* Landing neutrals — LIGHT */
+    --om-bg-0: #F5F7FA;
+    --om-bg-1: #FFFFFF;
+    --om-bg-2: #F0F2F5;
+    --om-bg-3: #E5E8ED;
+    --om-text-0: #111827;
+    --om-text-1: #374151;
+    --om-text-2: #6B7280;
+    --om-text-3: #9CA3AF;
+    --om-border-0: rgba(0,0,0,0.08);
+    --om-border-1: rgba(0,0,0,0.12);
+    --om-divider: rgba(0,0,0,0.06);
+    --om-accent: #0A84FF;
+    --om-focus-ring: rgba(10,132,255,0.18);
+
+    /* Premium accent tokens */
+    --accent-cyan: #00B9FF;
+    --accent-blue: #0A84FF;
+    --focus-ring: rgba(10,132,255,0.20);
+    --om-success: #16A34A;
+    --om-warning: #D97706;
+    --om-danger: #DC2626;
+
+    /* Glass morphism — light */
+    --glass-fill: rgba(255,255,255,0.70);
+    --glass-border: rgba(0,0,0,0.08);
+    --glass-highlight: rgba(255,255,255,0.90);
+    --glass-shadow: rgba(0,0,0,0.08);
+    --glass-blur: 20px;
+  }
+
+  .dark {
+    --background: 222 47% 6%;
+    --foreground: 220 14% 96%;
+
+    --card: 222 40% 10%;
+    --card-foreground: 220 14% 96%;
+
+    --popover: 222 40% 10%;
+    --popover-foreground: 220 14% 96%;
+
+    --primary: 224 76% 58%;
+    --primary-foreground: 222 47% 6%;
+
+    --secondary: 222 30% 16%;
+    --secondary-foreground: 220 14% 90%;
+
+    --muted: 222 30% 14%;
+    --muted-foreground: 220 9% 56%;
+
+    --accent: 168 60% 45%;
+    --accent-foreground: 222 47% 6%;
+
+    --destructive: 0 60% 44%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 222 25% 16%;
+    --input: 222 25% 16%;
+    --ring: 224 76% 55%;
+
+    --auction: 25 80% 52%;
+    --auction-foreground: 0 0% 100%;
+    --buy-now: 152 50% 48%;
+    --buy-now-foreground: 0 0% 100%;
+    --price: 220 14% 96%;
+    --shipping: 220 9% 50%;
+
+    --success: 152 50% 48%;
+    --success-foreground: 0 0% 100%;
+
+    --sidebar-background: 222 40% 8%;
+    --sidebar-foreground: 220 14% 96%;
+    --sidebar-primary: 224 76% 58%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 168 40% 16%;
+    --sidebar-accent-foreground: 168 60% 80%;
+    --sidebar-border: 222 25% 16%;
+    --sidebar-ring: 224 76% 55%;
+
+    /* Landing neutrals — DARK */
+    --om-bg-0: #0F1521;
+    --om-bg-1: #131B2A;
+    --om-bg-2: #182233;
+    --om-bg-3: #1E2A3E;
+    --om-text-0: #F5F7FF;
+    --om-text-1: #B8C0D4;
+    --om-text-2: #7F8AA3;
+    --om-text-3: #59647C;
+    --om-border-0: rgba(255,255,255,0.08);
+    --om-border-1: rgba(255,255,255,0.12);
+    --om-divider: rgba(255,255,255,0.06);
+    --om-accent: #00B9FF;
+    --om-focus-ring: rgba(0,185,255,0.18);
+
+    --om-success: #2EE59D;
+    --om-warning: #FFCC66;
+    --om-danger: #FF5C7A;
+
+    /* Glass morphism — dark */
+    --glass-fill: rgba(255,255,255,0.06);
+    --glass-border: rgba(255,255,255,0.12);
+    --glass-highlight: rgba(255,255,255,0.08);
+    --glass-shadow: rgba(0,0,0,0.55);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+  }
+}
+
+@layer components {
+  .glass-panel {
+    position: relative;
+    background: var(--glass-fill);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border-radius: 28px;
+    box-shadow:
+      0 20px 60px var(--glass-shadow),
+      inset 0 1px 0 var(--glass-highlight);
+    transition:
+      transform 200ms cubic-bezier(0.16, 1, 0.3, 1),
+      box-shadow 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .glass-panel::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background: linear-gradient(
+      135deg,
+      rgba(255,255,255,0.12) 0%,
+      rgba(255,255,255,0.05) 35%,
+      rgba(255,255,255,0.00) 70%
+    );
+    opacity: 0.35;
+  }
+  .glass-panel:hover {
+    transform: translateY(-2px);
+    box-shadow:
+      0 30px 80px var(--glass-shadow),
+      inset 0 1px 0 var(--glass-highlight);
+  }
+}
+
+@layer components {
+  /* OmniMarket surface layers */
+  .om-surface-0 { background-color: var(--om-bg-0); }
+  .om-surface-1 { background-color: var(--om-bg-1); }
+  .om-surface-2 { background-color: var(--om-bg-2); }
+
+  /* OmniMarket card */
+  .om-card {
+    background: var(--om-bg-2);
+    border: 1px solid var(--om-border-0);
+    border-radius: 1rem;
+    transition: all 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .om-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--om-border-1);
+    box-shadow: 0 0 80px rgba(0,185,255,0.06);
+  }
+
+  /* OmniMarket toolbar */
+  .om-toolbar {
+    background: var(--om-bg-1);
+    border: 1px solid var(--om-border-0);
+    border-radius: 0.75rem;
+  }
+
+  /* OmniMarket input */
+  .om-input {
+    background: var(--om-bg-2);
+    border: 1px solid var(--om-border-0);
+    color: var(--om-text-0);
+    transition: all 150ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .om-input::placeholder {
+    color: var(--om-text-3);
+  }
+  .om-input:focus {
+    outline: none;
+    box-shadow: 0 0 0 4px var(--om-focus-ring);
+    border-color: var(--om-accent);
+  }
+
+  /* OmniMarket command bar */
+  .om-command-bar {
+    background: var(--om-bg-1);
+    border: 1px solid var(--om-border-0);
+    border-radius: 1rem;
+  }
+
+  /* OmniMarket button micro-interactions */
+  .om-btn {
+    transition: all 150ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .om-btn:hover {
+    transform: translateY(-1px);
+  }
+  .om-btn:active {
+    transform: scale(0.98);
+  }
+
+  /* OmniMarket page background gradient */
+  .om-page-bg {
+    background: linear-gradient(180deg, var(--om-bg-0) 0%, var(--om-bg-1) 40%, var(--om-bg-0) 100%);
+    color: var(--om-text-0);
+    min-height: calc(100vh - 48px);
+  }
+
+  /* OmniMarket dropdown panel */
+  .om-dropdown {
+    background: var(--om-bg-1);
+    border: 1px solid var(--om-border-0);
+    border-radius: 0.5rem;
+    box-shadow: 0 20px 40px var(--glass-shadow);
+  }
+
+  /* OmniMarket pill (filter toggle) */
+  .om-pill {
+    padding: 0.25rem 0.625rem;
+    border-radius: 9999px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    border: 1px solid var(--om-border-0);
+    background: var(--om-bg-2);
+    color: var(--om-text-2);
+    transition: all 150ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .om-pill:hover {
+    border-color: var(--om-border-1);
+    color: var(--om-text-1);
+  }
+  .om-pill-active {
+    background: rgba(10,132,255,0.12);
+    border-color: rgba(10,132,255,0.3);
+    color: var(--om-accent);
+  }
+
+  /* Skeleton shimmer on dark */
+  .om-shimmer {
+    background: var(--om-bg-3);
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  /* Hero spotlight ambient glow */
+  .omni-hero-spotlight {
+    position: absolute;
+    inset: -20%;
+    pointer-events: none;
+    background:
+      radial-gradient(circle at 50% 40%,
+        rgba(10,132,255,0.14) 0%,
+        rgba(10,132,255,0.10) 22%,
+        rgba(10,132,255,0.06) 38%,
+        transparent 62%
+      );
+    filter: blur(22px);
+    opacity: 0.9;
+    animation: omniSpotPulse 10s ease-in-out infinite;
+  }
+}
+
+@keyframes omniSpotPulse {
+  0%, 100% { opacity: 0.85; transform: translateY(0px) scale(1); }
+  50% { opacity: 1; transform: translateY(-2px) scale(1.015); }
+}
+
+@keyframes omniProgress {
+  0%   { transform: translateX(-100%); }
+  60%  { transform: translateX(250%); }
+  100% { transform: translateX(250%); }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
