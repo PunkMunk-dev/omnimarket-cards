@@ -11,7 +11,7 @@ export const SkeletonCard = React.forwardRef<HTMLDivElement>(
         </div>
 
         {/* Card body — mirrors EbayListingCard p-3 space-y-2 */}
-        <div className="p-3 space-y-2">
+        <div className="p-3.5 space-y-2">
           {/* Title: 2 lines with same min-height as real card */}
           <div className="space-y-1.5 min-h-[2.5rem]">
             <div className="h-3.5 w-full rounded om-shimmer" />

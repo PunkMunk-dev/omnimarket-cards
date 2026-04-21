@@ -18,7 +18,6 @@ export function QuerySummaryBar({ playerName, sportLabel, brandLabel, showAllBra
   if (showAllBrands) parts.push('All Brands');
   else if (brandLabel) parts.push(brandLabel);
   if (traitLabels.length > 0) parts.push(...traitLabels);
-  parts.push('Raw Only');
 
   const hasQuery = !!playerName && (!!brandLabel || showAllBrands);
 
@@ -26,7 +25,6 @@ export function QuerySummaryBar({ playerName, sportLabel, brandLabel, showAllBra
     <div className="h-8 px-4 flex items-center" style={{ background: 'rgba(14,20,32,0.5)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
       <div className="flex items-center justify-between gap-4 text-xs w-full">
         <div className="flex items-center gap-1.5 min-w-0">
-          <span style={{ color: 'var(--om-text-3)' }}>Showing:</span>
           <span className="truncate" style={{ color: 'var(--om-text-0)' }}>
             {parts.map((part, i) => (<span key={i}>{i > 0 && <span className="mx-1.5" style={{ color: 'var(--om-text-3)' }}>·</span>}{part}</span>))}
           </span>

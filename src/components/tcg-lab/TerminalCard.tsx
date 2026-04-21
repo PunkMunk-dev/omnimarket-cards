@@ -6,6 +6,7 @@ import type { EbayListing } from '@/types/tcg';
 import { useSharedWatchlist } from '@/contexts/WatchlistContext';
 import { tcgListingToEbayItem } from '@/lib/watchlistAdapters';
 import { cleanListingTitle } from '@/lib/cleanTitle';
+import { usePricechartingLookup } from '@/hooks/usePricechartingLookup';
 
 interface TerminalCardProps {
   listing: EbayListing;
@@ -15,6 +16,8 @@ export function TerminalCard({ listing }: TerminalCardProps) {
   const { isInWatchlist, toggleWatchlist } = useSharedWatchlist();
   const watched = isInWatchlist(listing.itemId);
   const [copied, setCopied] = useState(false);
+
+  const { containerRef, pricingData, isLoading: isPricingLoading } = usePricechartingLookup(listing.title);
 
   const handleToggleWatchlist = () => {
     toggleWatchlist(tcgListingToEbayItem(listing));
@@ -31,12 +34,27 @@ export function TerminalCard({ listing }: TerminalCardProps) {
     .slice(0, 60);
 
   const isAuction = listing.listingType === 'AUCTION';
+  const listingPrice = parseFloat(listing.price.value);
+
+  // Profit relative to this specific eBay listing price (not raw market value)
+  const actualProfit =
+    pricingData?.psa10MarketValue !== null && pricingData?.psa10MarketValue !== undefined && !isAuction && !isNaN(listingPrice)
+      ? Math.round((pricingData.psa10MarketValue - listingPrice - 25) * 100) / 100
+      : null;
+
+  const actualRoi =
+    actualProfit !== null && listingPrice > 0
+      ? Math.round((actualProfit / listingPrice) * 100)
+      : null;
+
+  const showProfit = actualProfit !== null;
+  const profitPositive = actualProfit !== null && actualProfit > 0;
 
   const gradedCompsUrl = `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(cleanTitle + ' PSA 10')}&LH_Complete=1&LH_Sold=1&_sacat=183454`;
   const gemUrl = `https://www.gemrate.com/search?q=${encodeURIComponent(cleanTitle)}`;
 
   return (
-    <div className="om-card overflow-hidden">
+    <div ref={containerRef} className="om-card overflow-hidden">
       <a href={listing.itemWebUrl} target="_blank" rel="noopener noreferrer" className="block h-full">
         <div className="aspect-square overflow-hidden relative" style={{ background: 'var(--om-bg-3)' }}>
           <img src={listing.image} alt={cleanTitle} className="w-full h-full object-cover transition-transform duration-200 hover:scale-[1.02]" loading="lazy" />
@@ -77,6 +95,75 @@ export function TerminalCard({ listing }: TerminalCardProps) {
         </div>
         <div className="p-3 space-y-2.5">
           <h3 className="text-sm font-medium leading-snug line-clamp-2 min-h-[2.5rem]" style={{ color: 'var(--om-text-0)' }}>{cleanTitle}</h3>
+
+          {/* Profit block — only for BIN listings with a match */}
+          {!isAuction && (
+            <div
+              className="rounded-lg px-3 py-2.5"
+              style={{
+                background: isPricingLoading
+                  ? 'var(--om-bg-3)'
+                  : showProfit
+                    ? profitPositive
+                      ? 'rgba(0,200,100,0.07)'
+                      : 'rgba(255,60,60,0.07)'
+                    : 'transparent',
+                border: isPricingLoading
+                  ? '1px solid var(--om-border-0)'
+                  : showProfit
+                    ? profitPositive
+                      ? '1px solid rgba(0,200,100,0.28)'
+                      : '1px solid rgba(255,60,60,0.28)'
+                    : '1px solid var(--om-border-0)',
+                minHeight: '60px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+              }}
+            >
+              {isPricingLoading ? (
+                <div className="flex items-center gap-1.5">
+                  <div className="h-1.5 w-1.5 rounded-full animate-pulse" style={{ background: 'var(--om-text-3)' }} />
+                  <span className="text-[10px]" style={{ color: 'var(--om-text-3)' }}>Loading PSA 10 data…</span>
+                </div>
+              ) : showProfit ? (
+                <>
+                  <div className="flex items-baseline justify-between gap-1">
+                    <span
+                      className="text-[10px] font-semibold tracking-[0.08em] uppercase"
+                      style={{ color: profitPositive ? 'rgba(0,200,100,0.7)' : 'rgba(255,80,80,0.7)' }}
+                    >
+                      Est. Profit
+                    </span>
+                    {pricingData?.matchConfidence === 'medium' && (
+                      <span className="text-[9px]" style={{ color: 'var(--om-text-3)' }}>~est</span>
+                    )}
+                  </div>
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span
+                      className="text-2xl font-bold tabular-nums"
+                      style={{ color: profitPositive ? 'rgb(0,200,100)' : 'rgb(255,80,80)' }}
+                    >
+                      {profitPositive ? '+' : ''}{actualProfit !== null ? `$${actualProfit.toFixed(0)}` : '—'}
+                    </span>
+                    <div className="flex items-center gap-2 text-[11px]" style={{ color: 'var(--om-text-2)' }}>
+                      {actualRoi !== null && (
+                        <span className="tabular-nums font-medium">{actualRoi > 0 ? '+' : ''}{actualRoi}%</span>
+                      )}
+                      {pricingData?.psa10MarketValue !== null && pricingData?.psa10MarketValue !== undefined && (
+                        <span className="tabular-nums" style={{ color: 'var(--om-text-3)' }}>
+                          PSA 10 ${pricingData.psa10MarketValue.toFixed(0)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <span className="text-[10px]" style={{ color: 'var(--om-text-3)' }}>No PSA 10 data</span>
+              )}
+            </div>
+          )}
+
           <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
             <a href={gradedCompsUrl} target="_blank" rel="noopener noreferrer" className="om-btn min-w-[52px] text-center px-2.5 py-1 rounded-full text-[11px] font-semibold bg-red-500/80 text-white hover:bg-red-500 transition-colors">PSA 10</a>
             <a href={gemUrl} target="_blank" rel="noopener noreferrer" className="om-btn min-w-[42px] text-center px-2.5 py-1 rounded-full text-[11px] font-semibold bg-blue-500/80 text-white hover:bg-blue-500 transition-colors">Gem</a>

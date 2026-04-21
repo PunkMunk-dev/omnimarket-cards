@@ -34,7 +34,7 @@ export const QuickSearchInput = forwardRef<HTMLDivElement, QuickSearchInputProps
           onChange={(e) => { const v = e.target.value.slice(0, MAX_LENGTH); setLocalValue(v); debouncedOnChange(v); }}
           onKeyDown={(e) => { if (e.key === 'Enter') { if (debounceRef.current) clearTimeout(debounceRef.current); onChange(localValue); } }}
           placeholder={placeholder}
-          className="om-input w-full pl-9 pr-9 h-10 rounded-lg text-sm"
+          className="om-input w-full pl-10 pr-9 h-11 rounded-xl text-sm"
           maxLength={MAX_LENGTH}
         />
         {localValue && (

@@ -59,7 +59,6 @@ export function EbayListingCard({ listing, sportKey, isAuctionMode }: { listing:
             {listing.imageUrl ? <img src={imageSrc || listing.imageUrl} alt={listing.title} className="w-full h-full object-cover transition-transform duration-200 hover:scale-[1.02]" loading="lazy" onError={handleImageError} /> :
               <div className="w-full h-full flex items-center justify-center text-xs" style={{ color: 'var(--om-text-3)' }}>No image</div>}
             <div className="absolute bottom-0 left-0 right-0 h-28 bg-gradient-to-t from-black/95 via-black/60 to-transparent" />
-            <span className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-full text-[11px] font-semibold text-white/90 bg-black/50 backdrop-blur-sm">eBay</span>
             <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5">
               <WatchlistStar listing={listing} />
               {isAuction && <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold text-orange-400 bg-black/50 backdrop-blur-sm">Auction</span>}
@@ -75,22 +74,24 @@ export function EbayListingCard({ listing, sportKey, isAuctionMode }: { listing:
               </div>
             </div>
           </div>
-          <div className="p-3 space-y-2">
+          <div className="p-3.5 space-y-2">
             <h3 className="text-sm font-medium leading-snug line-clamp-2 min-h-[2.5rem]" style={{ color: 'var(--om-text-0)' }}>{listing.title}</h3>
 
             {/* ── Profit hero — most visually important ── */}
             {expectedProfit !== null ? (
-              <div
-                className="flex items-center justify-between px-3 py-2 rounded-lg"
-                style={{
-                  background: expectedProfit >= 0 ? 'rgba(46,229,157,0.08)' : 'rgba(255,92,122,0.08)',
-                  border: `1px solid ${expectedProfit >= 0 ? 'rgba(46,229,157,0.22)' : 'rgba(255,92,122,0.22)'}`,
-                }}
-              >
-                <span className="text-[11px] font-medium" style={{ color: 'var(--om-text-3)' }}>Est. Profit</span>
-                <span className={cn("text-xl font-bold tabular-nums tracking-tight", expectedProfit >= 0 ? "text-green-400" : "text-red-400")}>
-                  {expectedProfit >= 0 ? '+' : '−'}${Math.abs(expectedProfit).toFixed(0)}
-                </span>
+              <div className="pt-2.5" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                <div
+                  className="flex items-center justify-between px-3 py-3 rounded-lg"
+                  style={{
+                    background: expectedProfit >= 0 ? 'rgba(46,229,157,0.08)' : 'rgba(255,92,122,0.08)',
+                    border: `1px solid ${expectedProfit >= 0 ? 'rgba(46,229,157,0.28)' : 'rgba(255,92,122,0.28)'}`,
+                  }}
+                >
+                  <span className="text-[10px] font-semibold tracking-[0.08em] uppercase" style={{ color: 'var(--om-text-3)' }}>Est. Profit</span>
+                  <span className={cn("text-2xl font-bold tabular-nums tracking-tight", expectedProfit >= 0 ? "text-green-400" : "text-red-400")}>
+                    {expectedProfit >= 0 ? '+' : '−'}${Math.abs(expectedProfit).toFixed(0)}
+                  </span>
+                </div>
               </div>
             ) : soldMarketValue !== null ? (
               /* Auction or no profit calc — PSA-10 guide becomes the secondary hero */
@@ -127,9 +128,9 @@ export function EbayListingCard({ listing, sportKey, isAuctionMode }: { listing:
             )}
 
             {/* ── Utility row: research links + dimmed copy ── */}
-            <div className="flex items-center justify-between pt-1.5" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }} onClick={(e) => e.stopPropagation()}>
-              <div className="flex items-center gap-2">
-                <a href={ebaySoldUrl} target="_blank" rel="noopener noreferrer" className="om-btn min-w-[52px] text-center px-2.5 py-1 rounded-full text-[11px] font-semibold bg-red-500/80 text-white hover:bg-red-500 transition-colors">PSA 10</a>
+            <div className="flex items-center justify-between pt-2.5" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }} onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center gap-3.5">
+                <a href={ebaySoldUrl} target="_blank" rel="noopener noreferrer" className="om-btn text-[11px] font-semibold transition-colors" style={{ color: 'var(--om-text-3)' }} onMouseEnter={e => (e.currentTarget.style.color = 'var(--om-text-1)')} onMouseLeave={e => (e.currentTarget.style.color = 'var(--om-text-3)')}>PSA 10 ↗</a>
                 <GemRateBadge searchContext={listing.searchContext} fallbackUrl={gemRateUrl} />
               </div>
               <button

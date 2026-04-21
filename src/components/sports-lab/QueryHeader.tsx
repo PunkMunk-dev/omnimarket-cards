@@ -89,7 +89,6 @@ export function QueryHeader({
             <div className="flex items-center gap-4 flex-shrink-0">
               <div>
                 <h1 className="text-base font-bold tracking-tight" style={{ color: 'var(--om-text-0)', fontFamily: "'Space Grotesk', sans-serif" }}>Sports Market</h1>
-                <p className="text-[11px]" style={{ color: 'var(--om-text-3)' }}>Search by player, brand, and traits</p>
               </div>
               {onSearchModeChange && <SearchModeToggle mode={searchMode} onModeChange={onSearchModeChange} />}
             </div>

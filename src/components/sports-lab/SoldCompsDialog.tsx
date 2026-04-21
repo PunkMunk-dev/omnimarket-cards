@@ -57,8 +57,8 @@ export function SoldCompsDialog({ open, onOpenChange, soldComps, marketValue, co
 
         {marketValue !== null && (
           <div className="rounded-xl p-4" style={{ background: 'var(--om-bg-3)', border: '1px solid var(--om-border-0)' }}>
-            <div className="text-xs mb-1.5" style={{ color: 'var(--om-text-3)' }}>Market Value (Guide)</div>
-            <div className="text-2xl font-bold tabular-nums" style={{ color: 'var(--om-text-0)', fontFamily: "'Space Grotesk', sans-serif" }}>
+            <div className="text-[10px] font-semibold tracking-[0.08em] uppercase mb-1.5" style={{ color: 'var(--om-text-3)' }}>Graded Market Value</div>
+            <div className="text-3xl font-bold tabular-nums" style={{ color: 'var(--om-text-0)', fontFamily: "'Space Grotesk', sans-serif" }}>
               ${marketValue.toFixed(2)}
             </div>
           </div>

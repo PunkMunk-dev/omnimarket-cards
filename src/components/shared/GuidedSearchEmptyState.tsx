@@ -3,26 +3,27 @@ import { Search, TrendingUp, BarChart3, ChevronRight } from 'lucide-react';
 const STEPS = [
   {
     icon: Search,
-    label: 'Pick a player & brand',
-    desc: 'Guided dropdowns or quick search',
+    label: 'Search any card',
+    desc: 'Pokémon, One Piece, Sports — guided or quick search',
   },
   {
     icon: TrendingUp,
     label: 'See live eBay listings',
-    desc: 'Raw cards only, filtered instantly',
+    desc: 'Raw cards, filtered and ranked instantly',
   },
   {
     icon: BarChart3,
-    label: 'Spot profit opportunities',
-    desc: 'PSA-10 upside on every card',
+    label: 'Spot the spread',
+    desc: 'PSA-10 upside calculated on every result',
   },
 ];
 
 const EXAMPLE_SEARCHES = [
-  'Luka Doncic Prizm',
-  'Patrick Mahomes Prizm',
-  'LeBron James Mosaic',
-  'Victor Wembanyama Prizm',
+  'Monkey D. Luffy Manga Alt Art',
+  'Mega Charizard X ex',
+  'Luffy One Piece Card',
+  'Pikachu Illustrator',
+  'Charizard PSA 10',
 ];
 
 interface GuidedSearchEmptyStateProps {

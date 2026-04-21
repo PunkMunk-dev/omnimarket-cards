@@ -32,6 +32,7 @@ function sortListings(listings: EbayListing[], sortOption: SortOption): EbayList
 interface EbayResultsPanelProps {
   searchParams: EbaySearchParams; traitLabels?: string[]; sportKey?: string | null;
   onResultCountChange?: (count: number) => void; onLoadingChange?: (loading: boolean) => void; onReset?: () => void;
+  onTopListingChange?: (listing: EbayListing | null) => void;
 }
 
 type PriceRange = 'all' | 'under-10' | '10-50' | '50-100' | '100-250' | '250-500' | '500+';
@@ -45,7 +46,7 @@ const PRICE_RANGES: { value: PriceRange; label: string; min: number; max: number
   { value: '500+', label: '$500+', min: 500, max: null },
 ];
 
-export const EbayResultsPanel = React.forwardRef<HTMLDivElement, EbayResultsPanelProps>(function EbayResultsPanel({ searchParams, traitLabels, sportKey, onResultCountChange, onLoadingChange, onReset }: EbayResultsPanelProps, ref) {
+export const EbayResultsPanel = React.forwardRef<HTMLDivElement, EbayResultsPanelProps>(function EbayResultsPanel({ searchParams, traitLabels, sportKey, onResultCountChange, onLoadingChange, onReset, onTopListingChange }: EbayResultsPanelProps, ref) {
   const { listings, isLoading, isLoadingMore, isLoadingAll, error, hasMore, search, loadMore, loadAll, cancelLoadAll, retry } = useSportsEbaySearch();
   const lastSearchRef = useRef<string>('');
   const [sortOption, setSortOption] = useState<SortOption>('profit-high');
@@ -106,6 +107,11 @@ export const EbayResultsPanel = React.forwardRef<HTMLDivElement, EbayResultsPane
   }, [isLoading, listings.length, hasMore, error]);
 
   const sortedListings = useMemo(() => sortListings(filteredListings, sortOption), [filteredListings, sortOption]);
+
+  useEffect(() => {
+    const top = sortedListings.find(l => l.buyingOptions?.includes('FIXED_PRICE') && l.price !== null && l.psa10MarketValue !== null) ?? null;
+    onTopListingChange?.(top);
+  }, [sortedListings, onTopListingChange]);
 
   if (isLoading) return (
     <div className="space-y-4"><div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">{Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)}</div></div>

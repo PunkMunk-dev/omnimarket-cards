@@ -1,4 +1,5 @@
 import { useMemo, useState, useCallback, useEffect } from 'react';
+import type { EbayListing } from '@/types/sportsEbay';
 import { ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -9,6 +10,7 @@ import { QueryHeader } from '@/components/sports-lab/QueryHeader';
 import { ResultsGrid } from '@/components/sports-lab/ResultsGrid';
 import { WatchlistPanel } from '@/components/sports-lab/WatchlistPanel';
 import { EbayResultsPanel } from '@/components/sports-lab/EbayResultsPanel';
+import { FeaturedOpportunity } from '@/components/sports-lab/FeaturedOpportunity';
 import { GuidedSearchEmptyState } from '@/components/shared/GuidedSearchEmptyState';
 import { useSportsRulesetSnapshot } from '@/hooks/useSportsRulesetSnapshot';
 import { useSportsQueryBuilderState } from '@/hooks/useSportsQueryBuilderState';
@@ -24,6 +26,7 @@ export default function SportsLab() {
   const { count: watchlistCount } = useSportsWatchlist();
   const [searchMode, setSearchMode] = useState<SearchMode>('guided');
   const [quickSearchQuery, setQuickSearchQuery] = useState('');
+  const [featuredListing, setFeaturedListing] = useState<EbayListing | null>(null);
 
   const quickSearchParams = useMemo(() => ({
     playerName: quickSearchQuery.trim(),
@@ -99,10 +102,11 @@ export default function SportsLab() {
         quickSearchQuery={quickSearchQuery} onQuickSearchChange={setQuickSearchQuery}
       />
       <main className="flex-1 max-w-[1400px] mx-auto w-full px-4 md:px-6 lg:px-8 py-6">
+        <FeaturedOpportunity topListing={featuredListing} onExampleSearch={handleExampleSearch} />
         {searchMode === 'quick' ? (
           !canSearchQuick ? (
             <GuidedSearchEmptyState onQuickSearch={handleExampleSearch} />
-          ) : <EbayResultsPanel searchParams={quickSearchParams} sportKey={state.sport_key} onResultCountChange={handleResultCountChange} onLoadingChange={handleLoadingChange} />
+          ) : <EbayResultsPanel searchParams={quickSearchParams} sportKey={state.sport_key} onResultCountChange={handleResultCountChange} onLoadingChange={handleLoadingChange} onTopListingChange={setFeaturedListing} />
         ) : (
           !canSearchGuided ? (
             <GuidedSearchEmptyState onQuickSearch={handleExampleSearch} />

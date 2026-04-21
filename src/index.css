@@ -235,7 +235,7 @@
   .om-card:hover {
     transform: translateY(-2px);
     border-color: var(--om-border-1);
-    box-shadow: 0 0 80px rgba(0,185,255,0.06);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.18), 0 0 60px rgba(0,185,255,0.07);
   }
 
   /* OmniMarket toolbar */
@@ -315,10 +315,16 @@
     color: var(--om-accent);
   }
 
-  /* Skeleton shimmer on dark */
+  /* Skeleton shimmer — directional sweep */
   .om-shimmer {
-    background: var(--om-bg-3);
-    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    background: linear-gradient(
+      90deg,
+      var(--om-bg-3) 25%,
+      var(--om-bg-2) 50%,
+      var(--om-bg-3) 75%
+    );
+    background-size: 200% 100%;
+    animation: omShimmer 1.6s ease-in-out infinite;
   }
 
   /* Hero spotlight ambient glow */
@@ -337,6 +343,11 @@
     opacity: 0.9;
     animation: omniSpotPulse 10s ease-in-out infinite;
   }
+}
+
+@keyframes omShimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
 @keyframes omniSpotPulse {
