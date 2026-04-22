@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Filter } from 'lucide-react';
 import { QueryHeaderDropdown } from '@/components/sports-lab/QueryHeaderDropdown';
 import { QuerySummaryBar } from '@/components/sports-lab/QuerySummaryBar';
@@ -7,7 +6,7 @@ import { SearchModeToggle } from '@/components/sports-lab/SearchModeToggle';
 import { QuickSearchInput } from '@/components/sports-lab/QuickSearchInput';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { useTcgCardNames } from '@/hooks/useTcgData';
+import { useTcgEntities } from '@/hooks/useTcgData';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type { Game, TcgTarget, TcgSet } from '@/types/tcg';
 
@@ -39,18 +38,18 @@ export function TcgHeader({
   sets, selectedSetId, onSetChange, setSelectorOpen, onSetSelectorOpenChange,
   mode, onModeChange, quickQuery, onQuickQueryChange, totalCount, isSearchLoading,
 }: TcgHeaderProps) {
-  const [chaseSearch, setChaseSearch] = useState('');
-  const { data: cardOptions = [] } = useTcgCardNames(selectedGame, chaseSearch);
+  const { data: entityOptions = [] } = useTcgEntities(selectedGame);
   const isMobile = useIsMobile();
 
   const handleTargetChange = (value: string) => {
     if (!selectedGame) return;
+    const entity = entityOptions.find(e => e.id === value);
     onTargetChange({
       id: value,
-      name: value,
+      name: entity?.label ?? value,
       game: selectedGame,
       priority: 0,
-      tags: null,
+      tags: entity?.slug ?? null,
       created_at: new Date().toISOString(),
     });
   };
@@ -69,7 +68,7 @@ export function TcgHeader({
     <div className="flex items-center gap-1.5 flex-wrap">
       <QueryHeaderDropdown label="TCG" value={gameOptions.find(g => g.id === selectedGame)?.label || ''} placeholder="Select" options={gameOptions} selectedId={selectedGame} onSelect={(id) => onGameChange(id as Game)} />
       {selectedGame && (
-        <QueryHeaderDropdown label={chaseName} value={selectedTarget?.name || ''} placeholder="Select" options={cardOptions} selectedId={selectedTarget?.id || null} onSelect={handleTargetChange} searchable onSearchChange={setChaseSearch} />
+        <QueryHeaderDropdown label={chaseName} value={selectedTarget?.name || ''} placeholder="Select" options={entityOptions} selectedId={selectedTarget?.id || null} onSelect={handleTargetChange} searchable={entityOptions.length > 8} />
       )}
       {selectedGame && selectedGame !== 'one_piece' && selectedTarget && (
         <CanonicalSetSelector sets={sets} selectedSetId={selectedSetId} onSetChange={onSetChange} game={selectedGame} open={setSelectorOpen} onOpenChange={onSetSelectorOpenChange} />

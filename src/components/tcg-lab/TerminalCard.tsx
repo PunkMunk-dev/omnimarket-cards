@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Copy, Check, Star, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import type { EbayListing } from '@/types/tcg';
+import type { EbayListing, Game } from '@/types/tcg';
 import { useSharedWatchlist } from '@/contexts/WatchlistContext';
 import { tcgListingToEbayItem } from '@/lib/watchlistAdapters';
 import { cleanListingTitle } from '@/lib/cleanTitle';
@@ -10,14 +10,15 @@ import { usePricechartingLookup } from '@/hooks/usePricechartingLookup';
 
 interface TerminalCardProps {
   listing: EbayListing;
+  game?: Game;
 }
 
-export function TerminalCard({ listing }: TerminalCardProps) {
+export function TerminalCard({ listing, game }: TerminalCardProps) {
   const { isInWatchlist, toggleWatchlist } = useSharedWatchlist();
   const watched = isInWatchlist(listing.itemId);
   const [copied, setCopied] = useState(false);
 
-  const { containerRef, pricingData, isLoading: isPricingLoading } = usePricechartingLookup(listing.title);
+  const { containerRef, pricingData, isLoading: isPricingLoading } = usePricechartingLookup(listing.title, game);
 
   const handleToggleWatchlist = () => {
     toggleWatchlist(tcgListingToEbayItem(listing));
@@ -150,12 +151,17 @@ export function TerminalCard({ listing }: TerminalCardProps) {
                       {actualRoi !== null && (
                         <span className="tabular-nums font-medium">{actualRoi > 0 ? '+' : ''}{actualRoi}%</span>
                       )}
-                      {pricingData?.psa10MarketValue !== null && pricingData?.psa10MarketValue !== undefined && (
-                        <span className="tabular-nums" style={{ color: 'var(--om-text-3)' }}>
-                          PSA 10 ${pricingData.psa10MarketValue.toFixed(0)}
-                        </span>
-                      )}
                     </div>
+                  </div>
+                  {/* Price breakdown row */}
+                  <div className="flex items-center gap-3 mt-1.5 text-[10px]" style={{ color: 'var(--om-text-3)' }}>
+                    {pricingData?.rawMarketValue != null && (
+                      <span>Raw <span className="tabular-nums" style={{ color: 'var(--om-text-2)' }}>${pricingData.rawMarketValue.toFixed(0)}</span></span>
+                    )}
+                    {pricingData?.psa10MarketValue != null && (
+                      <span>PSA 10 <span className="tabular-nums" style={{ color: 'var(--om-text-2)' }}>${pricingData.psa10MarketValue.toFixed(0)}</span></span>
+                    )}
+                    <span>Gem <span style={{ color: 'var(--om-text-3)' }}>—</span></span>
                   </div>
                 </>
               ) : (

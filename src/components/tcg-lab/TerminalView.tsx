@@ -134,6 +134,7 @@ export function TerminalView({ target, game, freeQuery, selectedSetId, sets, onT
         hasMore={!!hasNextPage}
         isLoadingMore={isFetchingNextPage}
         onLoadMore={() => fetchNextPage()}
+        game={game}
       />
     </div>
   );

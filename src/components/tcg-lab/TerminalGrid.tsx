@@ -3,7 +3,7 @@ import { TerminalCard } from './TerminalCard';
 import { PackageX, Loader2 } from 'lucide-react';
 import { ResultsSkeletonGrid } from './ResultsSkeletonGrid';
 import { Button } from '@/components/ui/button';
-import type { EbayListing } from '@/types/tcg';
+import type { EbayListing, Game } from '@/types/tcg';
 import type { ProcessedListing } from '@/types/tcgFilters';
 
 interface TerminalGridProps {
@@ -13,10 +13,11 @@ interface TerminalGridProps {
   hasMore?: boolean;
   isLoadingMore?: boolean;
   onLoadMore?: () => void;
+  game?: Game;
 }
 
 export const TerminalGrid = React.forwardRef<HTMLDivElement, TerminalGridProps>(
-  ({ listings, isLoading, error, hasMore, isLoadingMore, onLoadMore }, ref) => {
+  ({ listings, isLoading, error, hasMore, isLoadingMore, onLoadMore, game }, ref) => {
     if (isLoading) return <ResultsSkeletonGrid />;
 
     if (error) {
@@ -42,7 +43,7 @@ export const TerminalGrid = React.forwardRef<HTMLDivElement, TerminalGridProps>(
       <div ref={ref}>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           {listings.map((listing) => (
-            <TerminalCard key={listing.itemId} listing={listing} />
+            <TerminalCard key={listing.itemId} listing={listing} game={game} />
           ))}
         </div>
 
