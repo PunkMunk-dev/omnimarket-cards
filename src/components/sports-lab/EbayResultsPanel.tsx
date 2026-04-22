@@ -6,6 +6,7 @@ import { EbayListingCard } from './EbayListingCard';
 import { SkeletonCard } from './SkeletonCard';
 import { useSportsEbaySearch } from '@/hooks/useSportsEbaySearch';
 import { cn } from '@/lib/utils';
+import { scoreRelevance } from '@/lib/rankListings';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { EbaySearchParams, SortOption, EbayListing } from '@/types/sportsEbay';
 
@@ -23,7 +24,7 @@ function sortListings(listings: EbayListing[], sortOption: SortOption): EbayList
     case 'profit-high': return sorted.sort((a, b) => calcProfit(b) - calcProfit(a));
     case 'price-high': return sorted.sort((a, b) => (b.price ?? -1) - (a.price ?? -1));
     case 'price-low': return sorted.sort((a, b) => (a.price ?? Infinity) - (b.price ?? Infinity));
-    case 'quality-high': return sorted.sort((a, b) => (b.imageQualityScore ?? -999) - (a.imageQualityScore ?? -999));
+    case 'quality-high': return sorted.sort((a, b) => scoreRelevance(b) - scoreRelevance(a));
     case 'ending-soon': return sorted.sort((a, b) => (a.itemEndDate ? new Date(a.itemEndDate).getTime() : Infinity) - (b.itemEndDate ? new Date(b.itemEndDate).getTime() : Infinity));
     case 'newest': default: return sorted.sort((a, b) => (b.listingDate ? new Date(b.listingDate).getTime() : 0) - (a.listingDate ? new Date(a.listingDate).getTime() : 0));
   }
