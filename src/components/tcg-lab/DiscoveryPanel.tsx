@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { TrendingUp, DollarSign, Shield, Zap, Flame } from 'lucide-react';
-import { useTopRoi, getHotnessLabel, getRoiBucket } from '@/hooks/useTopRoi';
+import { useTopRoi, getRoiBucket } from '@/hooks/useTopRoi';
 import type { RoiBucket } from '@/hooks/useTopRoi';
 import { RoiFeedCard } from './RoiFeedCard';
 import { HotBadge } from './HotBadge';
@@ -12,25 +12,23 @@ const GAME_TABS: { key: Game; label: string }[] = [
 ];
 
 const BUCKET_TABS: { key: RoiBucket; label: string; Icon: React.ComponentType<{ className?: string }> }[] = [
-  { key: 'Best ROI',    label: 'Best ROI',    Icon: TrendingUp },
-  { key: 'Best Spread', label: 'Best Spread', Icon: DollarSign },
-  { key: 'Low Risk',    label: 'Low Risk',    Icon: Shield },
-  { key: 'Emerging',    label: 'Emerging',    Icon: Zap },
+  { key: 'High Confidence', label: 'High Confidence', Icon: Shield },
+  { key: 'Best ROI',        label: 'Best ROI',        Icon: TrendingUp },
+  { key: 'Best Spread',     label: 'Best Spread',     Icon: DollarSign },
+  { key: 'Emerging',        label: 'Emerging',        Icon: Zap },
 ];
 
 export function DiscoveryPanel() {
   const [game, setGame] = useState<Game>('pokemon');
-  const [bucket, setBucket] = useState<RoiBucket>('Best ROI');
+  const [bucket, setBucket] = useState<RoiBucket>('High Confidence');
 
   const { data: allCards = [], isLoading } = useTopRoi(game);
 
-  const withHotness = allCards.map(c => ({ ...c, hotness: getHotnessLabel(c) }));
-
-  // Hot cards: any card with a hotness label, deduplicated, up to 6
-  const hotCards = withHotness.filter(c => c.hotness !== null).slice(0, 6);
+  // Hot cards: any card with a hotness label, up to 6
+  const hotCards = allCards.filter(c => c.hotnessLabel !== null).slice(0, 6);
 
   // Bucket cards: filtered + limited to 25
-  const bucketCards = withHotness.filter(c => getRoiBucket(c) === bucket).slice(0, 25);
+  const bucketCards = allCards.filter(c => getRoiBucket(c) === bucket).slice(0, 25);
 
   return (
     <div className="space-y-8 max-w-[900px]">
@@ -88,7 +86,7 @@ export function DiscoveryPanel() {
                     <p className="text-[12px] font-medium truncate min-w-0" style={{ color: 'var(--om-text-0)' }}>
                       {card.product_name}
                     </p>
-                    <HotBadge label={card.hotness!} size="xs" />
+                    <HotBadge label={card.hotnessLabel!} size="xs" />
                   </div>
                   <p className="text-[10px] mt-0.5" style={{ color: 'var(--om-text-3)' }}>
                     Raw ${card.loose_price.toFixed(0)} · PSA 10 ${card.graded_price.toFixed(0)}
@@ -108,12 +106,12 @@ export function DiscoveryPanel() {
         </section>
       )}
 
-      {/* Top 100 ROI */}
+      {/* Top ROI feed */}
       <section>
         <div className="flex items-center gap-2 mb-3">
           <TrendingUp className="h-3.5 w-3.5" style={{ color: 'var(--om-accent)' }} />
           <span className="text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: 'var(--om-text-2)' }}>
-            Top 100 ROI
+            Top ROI Opportunities
           </span>
           {!isLoading && allCards.length > 0 && (
             <span className="text-[10px] ml-auto" style={{ color: 'var(--om-text-3)' }}>
@@ -155,9 +153,8 @@ export function DiscoveryPanel() {
           ) : (
             <div>
               {bucketCards.map((card, i) => (
-                <RoiFeedCard key={card.id} card={card} hotness={card.hotness} rank={i + 1} />
+                <RoiFeedCard key={card.id} card={card} rank={i + 1} />
               ))}
-              {/* Remove border on last item */}
               <style>{`div > a:last-child { border-bottom: none !important; }`}</style>
             </div>
           )}

@@ -1,6 +1,17 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { Game } from '@/types/tcg';
+import {
+  passesPriceFilter,
+  passesNameFilter,
+  computeConfidence,
+  computeOpportunityScore,
+  getHotnessLabel,
+  getRoiBucket as _getRoiBucket,
+} from '@/lib/tcgScoring';
+
+// Re-export types so existing imports keep working
+export type { HotnessLabel, RoiBucket, ConfidenceLabel } from '@/lib/tcgScoring';
 
 const GAME_CATEGORY: Record<Game, string> = {
   pokemon: 'pokemon',
@@ -16,55 +27,20 @@ export interface TopRoiCard {
   graded_price: number;
   profit: number;
   roi: number;
-  blended_score: number;
+  confidence: number;
+  confidenceLabel: import('@/lib/tcgScoring').ConfidenceLabel;
+  opportunityScore: number;
+  hotnessLabel: import('@/lib/tcgScoring').HotnessLabel | null;
 }
 
-export type HotnessLabel = 'Heating Up' | 'Spread Widening' | 'High Upside' | 'New Release Momentum';
-export type RoiBucket = 'Best ROI' | 'Best Spread' | 'Low Risk' | 'Emerging';
-
-const HEAT_NAMES = [
-  'charizard', 'luffy', 'mewtwo', 'pikachu', 'rayquaza',
-  'shanks', 'umbreon', 'zoro', 'lugia', 'gengar',
-];
-const NEW_SET_TOKENS = [
-  'sv09', 'sv9', 'op13', 'op12', 'twilight masquerade',
-  'stellar crown', 'shrouded fable', 'paldean fates',
-];
-const JUNK_TERMS = [
-  'lot', ' pack', 'box', 'bundle', 'sealed', 'display',
-  'booster', 'tin', 'code card', 'collection',
-];
-const CHASE_KEYWORDS: Array<[string[], number]> = [
-  [['vmax', 'vstar', 'alt art', 'alternate art'], 10],
-  [['full art', 'rainbow', 'illustration rare', 'special art'], 8],
-  [['secret rare', 'hyper rare', 'gold star', '1st edition'], 6],
-];
-
-export function getHotnessLabel(card: TopRoiCard): HotnessLabel | null {
-  const name = card.normalized_name.toLowerCase();
-  if (NEW_SET_TOKENS.some(t => name.includes(t))) return 'New Release Momentum';
-  if (card.roi >= 200 && card.loose_price >= 5 && card.loose_price <= 50) return 'High Upside';
-  if (card.profit >= 100) return 'Spread Widening';
-  if (card.roi >= 50 && HEAT_NAMES.some(k => name.includes(k))) return 'Heating Up';
-  return null;
+/** Convenience wrapper — accepts a TopRoiCard so call-sites stay clean. */
+export function getRoiBucket(card: TopRoiCard): import('@/lib/tcgScoring').RoiBucket {
+  return _getRoiBucket(card.roi, card.profit, card.confidenceLabel);
 }
 
-export function getRoiBucket(card: TopRoiCard): RoiBucket {
-  if (card.loose_price >= 5 && card.loose_price <= 30 && card.roi >= 50 && card.profit >= 5) return 'Low Risk';
-  if (card.profit >= 80) return 'Best Spread';
-  if (card.roi >= 150) return 'Best ROI';
-  return 'Emerging';
-}
-
-function computeBlendedScore(card: { loose_price: number; graded_price: number; normalized_name: string }): number {
-  const profit = card.graded_price - card.loose_price;
-  const name = card.normalized_name.toLowerCase();
-  const roiScore = Math.min(profit / card.loose_price, 5.0) / 5.0 * 40;
-  const spreadScore = Math.min(profit, 500) / 500 * 30;
-  const qualityScore = card.graded_price > 100 ? 20 : card.graded_price > 50 ? 15 : card.graded_price > 20 ? 8 : 0;
-  const keywordBoost = CHASE_KEYWORDS.reduce((boost, [terms, pts]) =>
-    boost === 0 && terms.some(t => name.includes(t)) ? pts : boost, 0);
-  return roiScore + spreadScore + qualityScore + keywordBoost;
+/** @deprecated use card.hotnessLabel directly */
+export function getHotnessLabel_compat(card: TopRoiCard) {
+  return card.hotnessLabel;
 }
 
 export function useTopRoi(game: Game | null, limit = 150) {
@@ -73,17 +49,17 @@ export function useTopRoi(game: Game | null, limit = 150) {
   return useQuery({
     queryKey: ['top-roi', category],
     queryFn: async (): Promise<TopRoiCard[]> => {
-      // Fetch high-value rows server-side, score + filter client-side.
-      // Cannot use computed ORDER BY via PostgREST, so we fetch the top 500 by
-      // graded_price desc (high-value proxy) then rank by blended score.
+      // Fetch top 600 by graded_price desc — a high-value proxy for opportunity.
+      // Cannot use computed ORDER BY via PostgREST, so we score + sort client-side.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let query = (supabase as any)
         .from('pricecharting_tcg_cards')
         .select('id, product_name, normalized_name, category, loose_price, graded_price')
-        .gte('loose_price', 3)
+        .gte('loose_price', 15)       // raw floor — pre-filter at query level
+        .gte('graded_price', 50)      // graded floor — pre-filter at query level
         .gt('graded_price', 0)
         .order('graded_price', { ascending: false })
-        .limit(500);
+        .limit(600);
 
       if (category) {
         query = query.eq('category', category);
@@ -93,30 +69,41 @@ export function useTopRoi(game: Game | null, limit = 150) {
       if (error) throw error;
 
       return (data ?? [])
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .filter((c: any) => {
-          if (!c.loose_price || !c.graded_price) return false;
-          if (c.graded_price <= c.loose_price) return false;
-          if ((c.graded_price - c.loose_price) < 5) return false;
-          const name = (c.normalized_name || '').toLowerCase();
-          if (JUNK_TERMS.some(j => name.includes(j))) return false;
+          if (!passesPriceFilter(c.loose_price, c.graded_price)) return false;
+          if (!passesNameFilter(c.normalized_name || c.product_name || '')) return false;
           return true;
         })
-        .map((c: any) => {
-          const profit = Math.round((c.graded_price - c.loose_price) * 100) / 100;
-          const roi = Math.round((profit / c.loose_price) * 10) / 10;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .map((c: any): TopRoiCard => {
+          const raw = c.loose_price as number;
+          const graded = c.graded_price as number;
+          const name = (c.normalized_name || c.product_name || '') as string;
+
+          const profit = Math.round((graded - raw) * 100) / 100;
+          const roi = Math.round((profit / raw) * 10) / 10;
+
+          const { score: confidence, label: confidenceLabel } = computeConfidence(raw, graded);
+          const opportunityScore = computeOpportunityScore(raw, graded, name, confidence);
+          const hotnessLabel = getHotnessLabel(name, profit, roi, raw, confidenceLabel);
+
           return {
             id: c.id,
             product_name: c.product_name,
-            normalized_name: c.normalized_name || '',
+            normalized_name: name,
             category: c.category,
-            loose_price: c.loose_price,
-            graded_price: c.graded_price,
+            loose_price: raw,
+            graded_price: graded,
             profit,
             roi,
-            blended_score: computeBlendedScore(c),
-          } as TopRoiCard;
+            confidence,
+            confidenceLabel,
+            opportunityScore,
+            hotnessLabel,
+          };
         })
-        .sort((a: TopRoiCard, b: TopRoiCard) => b.blended_score - a.blended_score)
+        .sort((a: TopRoiCard, b: TopRoiCard) => b.opportunityScore - a.opportunityScore)
         .slice(0, limit);
     },
     staleTime: 10 * 60_000,

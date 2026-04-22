@@ -9,8 +9,7 @@ import { cleanListingTitle } from '@/lib/cleanTitle';
 import { usePricechartingLookup } from '@/hooks/usePricechartingLookup';
 import { HotBadge } from './HotBadge';
 import type { HotnessLabel } from '@/hooks/useTopRoi';
-
-const HEAT_NAMES = ['charizard','luffy','mewtwo','pikachu','rayquaza','shanks','umbreon','zoro','lugia','gengar'];
+import { HEAT_NAMES, THRESHOLDS } from '@/lib/tcgScoring';
 
 function deriveHotness(
   title: string,
@@ -19,10 +18,14 @@ function deriveHotness(
   loosePrice: number,
 ): HotnessLabel | null {
   if (profit === null || roi === null) return null;
-  if (roi >= 200 && loosePrice >= 5 && loosePrice <= 50) return 'High Upside';
-  if (profit >= 100) return 'Spread Widening';
+  if (
+    roi >= THRESHOLDS.HIGH_UPSIDE_MIN_ROI &&
+    loosePrice >= THRESHOLDS.HIGH_UPSIDE_RAW_MIN &&
+    loosePrice <= THRESHOLDS.HIGH_UPSIDE_RAW_MAX
+  ) return 'High Upside';
+  if (profit >= THRESHOLDS.SPREAD_WIDENING_MIN_PROFIT) return 'Spread Widening';
   const name = title.toLowerCase();
-  if (roi >= 50 && HEAT_NAMES.some(k => name.includes(k))) return 'Heating Up';
+  if (roi >= THRESHOLDS.HEATING_UP_MIN_ROI && HEAT_NAMES.some(k => name.includes(k))) return 'Heating Up';
   return null;
 }
 
