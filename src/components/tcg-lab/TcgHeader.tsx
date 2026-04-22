@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Filter } from 'lucide-react';
 import { QueryHeaderDropdown } from '@/components/sports-lab/QueryHeaderDropdown';
 import { QuerySummaryBar } from '@/components/sports-lab/QuerySummaryBar';
@@ -6,7 +7,7 @@ import { SearchModeToggle } from '@/components/sports-lab/SearchModeToggle';
 import { QuickSearchInput } from '@/components/sports-lab/QuickSearchInput';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { useTargets } from '@/hooks/useTcgData';
+import { useTcgCardNames } from '@/hooks/useTcgData';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type { Game, TcgTarget, TcgSet } from '@/types/tcg';
 
@@ -38,19 +39,25 @@ export function TcgHeader({
   sets, selectedSetId, onSetChange, setSelectorOpen, onSetSelectorOpenChange,
   mode, onModeChange, quickQuery, onQuickQueryChange, totalCount, isSearchLoading,
 }: TcgHeaderProps) {
-  const { data: targets = [] } = useTargets(selectedGame);
+  const [chaseSearch, setChaseSearch] = useState('');
+  const { data: cardOptions = [] } = useTcgCardNames(selectedGame, chaseSearch);
   const isMobile = useIsMobile();
 
   const handleTargetChange = (value: string) => {
-    const target = targets.find(t => t.id === value);
-    onTargetChange(target || null);
+    if (!selectedGame) return;
+    onTargetChange({
+      id: value,
+      name: value,
+      game: selectedGame,
+      priority: 0,
+      tags: null,
+      created_at: new Date().toISOString(),
+    });
   };
 
   const chaseName = selectedGame === 'one_piece' ? 'Bounty' : 'Chase';
   const selectedSet = sets.find(s => s.id === selectedSetId);
   const hasActiveQuery = (mode === 'guided' && !!selectedTarget && !!selectedGame) || (mode === 'quick' && quickQuery.trim().length > 0);
-
-  const targetOptions = targets.map(t => ({ id: t.id, label: t.name }));
 
   const summaryPlayerName = mode === 'quick' ? (quickQuery.trim() || undefined) : selectedTarget?.name;
   const summaryBrandLabel = mode === 'guided' && selectedGame !== 'one_piece' ? (selectedSet?.set_name || undefined) : undefined;
@@ -62,7 +69,7 @@ export function TcgHeader({
     <div className="flex items-center gap-1.5 flex-wrap">
       <QueryHeaderDropdown label="TCG" value={gameOptions.find(g => g.id === selectedGame)?.label || ''} placeholder="Select" options={gameOptions} selectedId={selectedGame} onSelect={(id) => onGameChange(id as Game)} />
       {selectedGame && (
-        <QueryHeaderDropdown label={chaseName} value={targets.find(t => t.id === selectedTarget?.id)?.name || ''} placeholder="Select" options={targetOptions} selectedId={selectedTarget?.id || null} onSelect={handleTargetChange} searchable={targets.length > 8} />
+        <QueryHeaderDropdown label={chaseName} value={selectedTarget?.name || ''} placeholder="Select" options={cardOptions} selectedId={selectedTarget?.id || null} onSelect={handleTargetChange} searchable onSearchChange={setChaseSearch} />
       )}
       {selectedGame && selectedGame !== 'one_piece' && selectedTarget && (
         <CanonicalSetSelector sets={sets} selectedSetId={selectedSetId} onSetChange={onSetChange} game={selectedGame} open={setSelectorOpen} onOpenChange={onSetSelectorOpenChange} />

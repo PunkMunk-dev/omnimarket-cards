@@ -8,20 +8,35 @@ interface QueryHeaderDropdownProps {
   label: string; value: string; placeholder: string; options: DropdownOption[];
   selectedId: string | null; onSelect: (id: string) => void; searchable?: boolean;
   showAllMode?: boolean; showAllActive?: boolean; onShowAll?: () => void;
+  onSearchChange?: (search: string) => void;
 }
 
-export function QueryHeaderDropdown({ label, value, placeholder, options, selectedId, onSelect, searchable = false, showAllMode = false, showAllActive = false, onShowAll }: QueryHeaderDropdownProps) {
+export function QueryHeaderDropdown({ label, value, placeholder, options, selectedId, onSelect, searchable = false, showAllMode = false, showAllActive = false, onShowAll, onSearchChange }: QueryHeaderDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const h = (e: MouseEvent) => { if (containerRef.current && !containerRef.current.contains(e.target as Node)) { setIsOpen(false); setSearch(''); } };
+    const h = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+        setSearch('');
+        onSearchChange?.('');
+      }
+    };
     document.addEventListener('mousedown', h);
     return () => document.removeEventListener('mousedown', h);
-  }, []);
+  }, [onSearchChange]);
 
-  const filtered = searchable && search ? options.filter(o => o.label.toLowerCase().includes(search.toLowerCase())) : options;
+  const handleSearchChange = (val: string) => {
+    setSearch(val);
+    onSearchChange?.(val);
+  };
+
+  // When onSearchChange is provided, options are already server-filtered — skip client filter
+  const filtered = searchable && search && !onSearchChange
+    ? options.filter(o => o.label.toLowerCase().includes(search.toLowerCase()))
+    : options;
 
   return (
     <div ref={containerRef} className="relative">
@@ -45,7 +60,7 @@ export function QueryHeaderDropdown({ label, value, placeholder, options, select
             <div className="p-2.5" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
               <div className="relative">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5" style={{ color: 'var(--om-text-3)' }} />
-                <input placeholder={`Search ${label.toLowerCase() || 'options'}...`} value={search} onChange={(e) => setSearch(e.target.value)}
+                <input placeholder={`Search ${label.toLowerCase() || 'options'}...`} value={search} onChange={(e) => handleSearchChange(e.target.value)}
                   className="om-input w-full pl-8 h-9 text-sm rounded-md" autoFocus />
               </div>
             </div>
