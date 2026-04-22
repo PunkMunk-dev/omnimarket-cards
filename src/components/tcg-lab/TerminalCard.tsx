@@ -7,6 +7,24 @@ import { useSharedWatchlist } from '@/contexts/WatchlistContext';
 import { tcgListingToEbayItem } from '@/lib/watchlistAdapters';
 import { cleanListingTitle } from '@/lib/cleanTitle';
 import { usePricechartingLookup } from '@/hooks/usePricechartingLookup';
+import { HotBadge } from './HotBadge';
+import type { HotnessLabel } from '@/hooks/useTopRoi';
+
+const HEAT_NAMES = ['charizard','luffy','mewtwo','pikachu','rayquaza','shanks','umbreon','zoro','lugia','gengar'];
+
+function deriveHotness(
+  title: string,
+  profit: number | null,
+  roi: number | null,
+  loosePrice: number,
+): HotnessLabel | null {
+  if (profit === null || roi === null) return null;
+  if (roi >= 200 && loosePrice >= 5 && loosePrice <= 50) return 'High Upside';
+  if (profit >= 100) return 'Spread Widening';
+  const name = title.toLowerCase();
+  if (roi >= 50 && HEAT_NAMES.some(k => name.includes(k))) return 'Heating Up';
+  return null;
+}
 
 interface TerminalCardProps {
   listing: EbayListing;
@@ -51,6 +69,8 @@ export function TerminalCard({ listing, game }: TerminalCardProps) {
   const showProfit = actualProfit !== null;
   const profitPositive = actualProfit !== null && actualProfit > 0;
 
+  const hotnessLabel = deriveHotness(listing.title, actualProfit, actualRoi, listingPrice);
+
   const gradedCompsUrl = `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(cleanTitle + ' PSA 10')}&LH_Complete=1&LH_Sold=1&_sacat=183454`;
   const gemUrl = `https://www.gemrate.com/search?q=${encodeURIComponent(cleanTitle)}`;
 
@@ -60,7 +80,10 @@ export function TerminalCard({ listing, game }: TerminalCardProps) {
         <div className="aspect-square overflow-hidden relative" style={{ background: 'var(--om-bg-3)' }}>
           <img src={listing.image} alt={cleanTitle} className="w-full h-full object-cover transition-transform duration-200 hover:scale-[1.02]" loading="lazy" />
           <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-black/90 via-black/50 to-transparent" />
-          <span className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-full text-[11px] font-semibold text-white/90 bg-black/50 backdrop-blur-sm">eBay</span>
+          <div className="absolute top-2.5 left-2.5 flex flex-col items-start gap-1">
+            <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold text-white/90 bg-black/50 backdrop-blur-sm">eBay</span>
+            {hotnessLabel && !isPricingLoading && <HotBadge label={hotnessLabel} size="xs" />}
+          </div>
           <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5">
             <button
               onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleToggleWatchlist(); }}

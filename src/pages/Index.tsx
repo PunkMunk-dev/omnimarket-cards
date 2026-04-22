@@ -262,13 +262,13 @@ export default function Index() {
             <div className="relative mx-auto w-full max-w-[1400px] px-4 md:px-6 lg:px-8">
               {/* ── Hero — centered single column ── */}
               <div className="flex flex-col items-center text-center min-h-[70vh] justify-center py-16 md:py-24">
-                <span className="text-[11px] font-medium uppercase tracking-[0.30em]" style={{ color: 'var(--om-text-1)' }}>OmniMarket Cards</span>
+                <span className="text-[11px] font-medium uppercase tracking-[0.30em]" style={{ color: 'var(--om-text-1)' }}>OmniMarket Cards · Pokémon &amp; One Piece</span>
 
                 <h1 className="mt-6 text-[36px] md:text-[48px] font-semibold tracking-[-0.03em] leading-[1.08] max-w-[640px]" style={{ color: 'var(--om-text-0)' }}>
-                  Find Profitable Cards Before Everyone Else.
+                  Raw-to-PSA-10 Profit Intelligence. Live.
                 </h1>
                 <p className="mt-4 max-w-[500px] text-[14px] leading-[1.55]" style={{ color: 'var(--om-text-2)' }}>
-                  Live eBay data + PSA-10 insights show you exactly which cards are underpriced, worth grading, and ready to flip — in seconds.
+                  See exactly which Pokémon and One Piece cards are underpriced right now — raw price, PSA 10 comp, profit spread, and ROI in one view.
                 </p>
 
                 <div className="mt-6 flex items-center gap-3 flex-wrap justify-center">
@@ -292,37 +292,58 @@ export default function Index() {
                   Stop guessing. See the spread.
                 </p>
 
-                {/* Why this matters */}
-                <div className="mt-10 max-w-[480px] rounded-xl px-5 py-4 text-left" style={{ background: 'var(--om-bg-2)', border: '1px solid var(--om-border-0)' }}>
-                  <p className="text-[12px] font-semibold" style={{ color: 'var(--om-text-1)' }}>Most collectors guess what's worth grading.</p>
-                  <p className="mt-1 text-[12px] leading-relaxed" style={{ color: 'var(--om-text-3)' }}>
-                    OmniMarket shows you the exact spread between raw and PSA 10 — backed by real sold comps.
-                  </p>
+                {/* Signal pills */}
+                <div className="mt-8 flex items-center gap-2 flex-wrap justify-center">
+                  {['Raw Price', 'PSA 10 Comp', 'Profit Spread', 'ROI %', 'Gem Rate'].map(label => (
+                    <span key={label} className="px-3 py-1 rounded-full text-[11px] font-medium" style={{ background: 'var(--om-bg-2)', border: '1px solid var(--om-border-0)', color: 'var(--om-text-2)' }}>
+                      {label}
+                    </span>
+                  ))}
                 </div>
               </div>
 
               {/* ── Market Tiles ── */}
-              <div ref={marketTilesRef} className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8 pb-20">
+              <div ref={marketTilesRef} className="mt-8 pb-20 space-y-4">
+                {/* TCG — primary tile, full width */}
                 <Link
                   to="/tcg"
-                  className="group rounded-3xl p-10 hover:-translate-y-[3px] transition-all duration-200 flex flex-col"
+                  className="group rounded-3xl p-10 hover:-translate-y-[3px] transition-all duration-200 flex flex-col md:flex-row md:items-center md:justify-between gap-6"
                   style={{ background: 'var(--om-bg-2)', border: '1px solid var(--om-border-0)', boxShadow: '0 20px 60px var(--glass-shadow)', transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)' }}
                 >
-                  <h3 className="text-[16px] font-semibold" style={{ color: 'var(--om-text-0)' }}>TCG Market</h3>
-                  <p className="mt-1 text-[14px]" style={{ color: 'var(--om-text-2)' }}>Pokémon · One Piece · MTG. See the raw-to-PSA-10 spread on high-value chase cards — live, in seconds.</p>
-                  <span className="mt-4 inline-flex items-center justify-center rounded-xl h-10 px-5 text-sm font-medium w-fit hover:-translate-y-px active:scale-[0.98] transition-all duration-200" style={{ background: 'var(--om-accent)', color: '#fff' }}>
-                    Find TCG Opportunities <ArrowRight className="ml-2 h-3.5 w-3.5" />
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="text-[18px] font-semibold" style={{ color: 'var(--om-text-0)' }}>TCG Profit Intelligence</h3>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase" style={{ background: 'rgba(10,132,255,0.12)', color: 'rgb(10,132,255)' }}>Live</span>
+                    </div>
+                    <p className="text-[14px]" style={{ color: 'var(--om-text-2)' }}>Pokémon &amp; One Piece. See raw price, PSA 10 comp, profit spread, and ROI on every live eBay listing — instantly.</p>
+                    <div className="flex items-center gap-3 mt-3 flex-wrap">
+                      {['Charizard', 'Luffy', 'Pikachu', 'Shanks', 'Mewtwo'].map(name => (
+                        <span key={name} className="text-[11px] font-medium" style={{ color: 'var(--om-text-3)' }}>{name}</span>
+                      ))}
+                    </div>
+                  </div>
+                  <span className="inline-flex items-center justify-center rounded-xl h-11 px-6 text-sm font-medium shrink-0 hover:-translate-y-px active:scale-[0.98] transition-all duration-200" style={{ background: 'var(--om-accent)', color: '#fff' }}>
+                    Explore TCG Market <ArrowRight className="ml-2 h-3.5 w-3.5" />
                   </span>
                 </Link>
+
+                {/* Sports — secondary tile */}
                 <Link
                   to="/sports"
-                  className="group rounded-3xl p-10 hover:-translate-y-[3px] transition-all duration-200 flex flex-col"
-                  style={{ background: 'var(--om-bg-2)', border: '1px solid var(--om-border-0)', boxShadow: '0 20px 60px var(--glass-shadow)', transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)' }}
+                  className="group rounded-2xl px-8 py-6 hover:-translate-y-[2px] transition-all duration-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+                  style={{ background: 'var(--om-bg-1)', border: '1px solid var(--om-border-0)', transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)' }}
                 >
-                  <h3 className="text-[16px] font-semibold" style={{ color: 'var(--om-text-0)' }}>Sports Market</h3>
-                  <p className="mt-1 text-[14px]" style={{ color: 'var(--om-text-2)' }}>NBA · NFL · MLB. Filter by player, brand, and traits to instantly surface the highest-upside raw cards.</p>
-                  <span className="mt-4 inline-flex items-center justify-center rounded-xl h-10 px-5 text-sm font-medium w-fit hover:-translate-y-px active:scale-[0.98] transition-all duration-200" style={{ background: 'var(--om-accent)', color: '#fff' }}>
-                    Find Sports Opportunities <ArrowRight className="ml-2 h-3.5 w-3.5" />
+                  <div className="flex items-center gap-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-[14px] font-semibold" style={{ color: 'var(--om-text-0)' }}>Sports Market</h3>
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide" style={{ background: 'rgba(255,180,0,0.12)', color: 'rgb(200,150,0)' }}>Beta</span>
+                      </div>
+                      <p className="text-[12px]" style={{ color: 'var(--om-text-3)' }}>NBA · NFL · MLB — filter by player, brand, and traits</p>
+                    </div>
+                  </div>
+                  <span className="inline-flex items-center gap-1.5 text-sm font-medium shrink-0" style={{ color: 'var(--om-text-2)' }}>
+                    View <ChevronRight className="h-4 w-4" />
                   </span>
                 </Link>
               </div>

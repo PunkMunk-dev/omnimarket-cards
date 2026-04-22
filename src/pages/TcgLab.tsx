@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { TcgHeader } from '@/components/tcg-lab/TcgHeader';
 import { TerminalView } from '@/components/tcg-lab/TerminalView';
-import { GuidedSearchEmptyState } from '@/components/shared/GuidedSearchEmptyState';
+import { DiscoveryPanel } from '@/components/tcg-lab/DiscoveryPanel';
 import { useSets } from '@/hooks/useTcgData';
 import type { Game, TcgTarget } from '@/types/tcg';
 import psaMosaic from '@/assets/psa-mosaic.jpg';
@@ -79,7 +79,7 @@ export default function TcgLab() {
               onLoadingChange={setIsSearchLoading}
             />
           ) : (
-            <GuidedSearchEmptyState />
+            <DiscoveryPanel />
           )}
         </main>
       </div>

@@ -7,8 +7,8 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { WatchlistDropdown } from '@/components/WatchlistDropdown';
 
 const tabs = [
-  { to: '/tcg', label: 'TCG Market', shortLabel: 'TCG' },
-  { to: '/sports', label: 'Sports Market', shortLabel: 'Sports' },
+  { to: '/tcg', label: 'TCG Market', shortLabel: 'TCG', beta: false },
+  { to: '/sports', label: 'Sports', shortLabel: 'Sports', beta: true },
 ];
 
 export function TabNavigation() {
@@ -27,7 +27,7 @@ export function TabNavigation() {
 
   const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark');
 
-  const navItems = tabs.map(({ to, label, shortLabel }) => (
+  const navItems = tabs.map(({ to, label, shortLabel, beta }) => (
     <NavLink
       key={to}
       to={to}
@@ -36,7 +36,7 @@ export function TabNavigation() {
           'transition-all font-medium',
           isMobile
             ? 'relative flex flex-col items-center gap-0.5 py-2 px-3 text-[11px]'
-            : 'px-3 py-2 rounded-xl text-sm',
+            : 'px-3 py-2 rounded-xl text-sm inline-flex items-center gap-1.5',
           isMobile
             ? isActive
               ? 'text-primary'
@@ -50,6 +50,12 @@ export function TabNavigation() {
       {({ isActive }) => (
         <>
           <span>{isMobile ? shortLabel : label}</span>
+          {beta && !isMobile && (
+            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide"
+              style={{ background: 'rgba(255,180,0,0.12)', color: 'rgb(200,150,0)' }}>
+              Beta
+            </span>
+          )}
           {isMobile && isActive && (
             <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-0.5 rounded-full bg-primary" />
           )}
