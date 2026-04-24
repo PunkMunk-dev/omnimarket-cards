@@ -1,12 +1,12 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Copy, Check, Star, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
 import type { EbayListing, Game } from '@/types/tcg';
 import { useSharedWatchlist } from '@/contexts/WatchlistContext';
 import { tcgListingToEbayItem } from '@/lib/watchlistAdapters';
 import { cleanListingTitle } from '@/lib/cleanTitle';
 import { usePricechartingLookup } from '@/hooks/usePricechartingLookup';
+import { useTcgGemRateSearch } from '@/hooks/useTcgGemRateSearch';
 import { HotBadge } from './HotBadge';
 import type { HotnessLabel } from '@/hooks/useTopRoi';
 import { HEAT_NAMES, THRESHOLDS } from '@/lib/tcgScoring';
@@ -29,6 +29,13 @@ function deriveHotness(
   return null;
 }
 
+// Pill style by confidence label
+const CONF_STYLE = {
+  high:   { color: 'rgb(0,200,100)',  label: 'High' },
+  medium: { color: 'rgb(200,160,0)', label: 'Med'  },
+  low:    { color: 'rgb(180,80,80)', label: 'Low'  },
+} as const;
+
 interface TerminalCardProps {
   listing: EbayListing;
   game?: Game;
@@ -39,12 +46,7 @@ export function TerminalCard({ listing, game }: TerminalCardProps) {
   const watched = isInWatchlist(listing.itemId);
   const [copied, setCopied] = useState(false);
 
-  const { containerRef, pricingData, isLoading: isPricingLoading } = usePricechartingLookup(listing.title, game);
-
-  const handleToggleWatchlist = () => {
-    toggleWatchlist(tcgListingToEbayItem(listing));
-  };
-
+  // Clean title first — needed before hook calls that use it
   const cleanTitle = listing.title
     .replace(/[\u{1F600}-\u{1F64F}]/gu, '')
     .replace(/[\u{1F300}-\u{1F5FF}]/gu, '')
@@ -55,10 +57,37 @@ export function TerminalCard({ listing, game }: TerminalCardProps) {
     .trim()
     .slice(0, 60);
 
+  const { containerRef, pricingData, isLoading: isPricingLoading } = usePricechartingLookup(listing.title, game);
+
+  const {
+    containerRef: gemContainerRef,
+    totalGrades,
+    confidence: gemConfidence,
+    loading: gemLoading,
+  } = useTcgGemRateSearch({
+    product_name: cleanTitle,
+    normalized_name: pricingData?.matchedProductName || cleanTitle,
+    category: (game === 'one_piece' ? 'one_piece' : 'pokemon'),
+  });
+
+  // Merge both IntersectionObserver refs onto the same root element
+  const mergedRef = useCallback(
+    (el: HTMLDivElement | null) => {
+      (containerRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
+      (gemContainerRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
+    },
+    // Refs are stable object references — no deps needed
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+
+  const handleToggleWatchlist = () => {
+    toggleWatchlist(tcgListingToEbayItem(listing));
+  };
+
   const isAuction = listing.listingType === 'AUCTION';
   const listingPrice = parseFloat(listing.price.value);
 
-  // Profit relative to this specific eBay listing price (not raw market value)
   const actualProfit =
     pricingData?.psa10MarketValue !== null && pricingData?.psa10MarketValue !== undefined && !isAuction && !isNaN(listingPrice)
       ? Math.round((pricingData.psa10MarketValue - listingPrice - 25) * 100) / 100
@@ -77,8 +106,10 @@ export function TerminalCard({ listing, game }: TerminalCardProps) {
   const gradedCompsUrl = `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(cleanTitle + ' PSA 10')}&LH_Complete=1&LH_Sold=1&_sacat=183454`;
   const gemUrl = `https://www.gemrate.com/search?q=${encodeURIComponent(cleanTitle)}`;
 
+  const confStyle = gemConfidence ? CONF_STYLE[gemConfidence] : null;
+
   return (
-    <div ref={containerRef} className="om-card overflow-hidden">
+    <div ref={mergedRef} className="om-card overflow-hidden">
       <a href={listing.itemWebUrl} target="_blank" rel="noopener noreferrer" className="block h-full">
         <div className="aspect-square overflow-hidden relative" style={{ background: 'var(--om-bg-3)' }}>
           <img src={listing.image} alt={cleanTitle} className="w-full h-full object-cover transition-transform duration-200 hover:scale-[1.02]" loading="lazy" />
@@ -179,7 +210,7 @@ export function TerminalCard({ listing, game }: TerminalCardProps) {
                       )}
                     </div>
                   </div>
-                  {/* Price breakdown row */}
+                  {/* Price + gem data row */}
                   <div className="flex items-center gap-3 mt-1.5 text-[10px]" style={{ color: 'var(--om-text-3)' }}>
                     {pricingData?.rawMarketValue != null && (
                       <span>Raw <span className="tabular-nums" style={{ color: 'var(--om-text-2)' }}>${pricingData.rawMarketValue.toFixed(0)}</span></span>
@@ -187,7 +218,22 @@ export function TerminalCard({ listing, game }: TerminalCardProps) {
                     {pricingData?.psa10MarketValue != null && (
                       <span>PSA 10 <span className="tabular-nums" style={{ color: 'var(--om-text-2)' }}>${pricingData.psa10MarketValue.toFixed(0)}</span></span>
                     )}
-                    <span>Gem <span style={{ color: 'var(--om-text-3)' }}>—</span></span>
+                    {/* GemRate data */}
+                    {gemLoading ? (
+                      <span style={{ color: 'var(--om-text-3)' }}>Gem …</span>
+                    ) : totalGrades !== null && confStyle ? (
+                      <span>
+                        Pop <span className="tabular-nums" style={{ color: 'var(--om-text-2)' }}>{totalGrades.toLocaleString()}</span>
+                        <span
+                          className="ml-1 text-[9px] font-semibold px-1 py-0.5 rounded"
+                          style={{ color: confStyle.color, background: `${confStyle.color}1a` }}
+                        >
+                          {confStyle.label}
+                        </span>
+                      </span>
+                    ) : (
+                      <span>Gem <span style={{ color: 'var(--om-text-3)' }}>—</span></span>
+                    )}
                   </div>
                 </>
               ) : (
