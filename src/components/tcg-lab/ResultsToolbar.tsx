@@ -65,10 +65,11 @@ export function ResultsToolbar({
         </button>
 
         <Select value={priceRange} onValueChange={(v) => onPriceRangeChange(v as PriceRange)}>
-          <SelectTrigger className="h-7 w-[110px] text-[11px] om-input rounded-full border-white/10">
+          <SelectTrigger className="h-7 w-[110px] text-[11px] om-input rounded-full border-white/10" title="Filter by eBay listing price">
             <SelectValue />
           </SelectTrigger>
           <SelectContent className="om-dropdown">
+            <p className="px-2 pt-1.5 pb-1 text-[10px]" style={{ color: 'var(--om-text-3)' }}>eBay listing price</p>
             {PRICE_RANGES.map((range) => (
               <SelectItem key={range.value} value={range.value} className="text-xs text-[var(--om-text-1)] hover:bg-white/5">
                 {range.label}

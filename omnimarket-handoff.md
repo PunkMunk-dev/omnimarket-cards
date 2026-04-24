@@ -1,6 +1,6 @@
 # OmniMarket Cards — System Handoff (TCG Intelligence Platform)
 
-**Last updated:** April 2026  
+**Last updated:** April 24, 2026  
 **Repo:** `https://github.com/PunkMunk-dev/omnimarket-cards`  
 **Branch:** `main`  
 **Vercel project:** `omnimarket-cards` (`prj_0kWpG8ibVWD6MH9ex18ltSbaxe1c`)  
@@ -14,9 +14,10 @@ OmniMarket Cards is a TCG investment intelligence platform. Its core value propo
 
 The interface surfaces:
 - Live eBay raw listings for a searched card
-- PriceCharting raw market price + PSA 10 market price, looked up automatically per listing
-- Computed profit spread and ROI after a $25 grading cost assumption
-- Confidence labels reflecting data quality
+- PriceCharting raw market price + PSA 10 **estimate** looked up automatically per listing
+- Computed profit spread ("Spread Est.") and ROI after a $25 grading cost assumption
+- Confidence labels reflecting data quality (shown as "approx." for medium/low matches)
+- GemRate population count (total grades) + match confidence from `tcg-gemrate-search` edge function
 - Hot badges for cards showing specific opportunity signals
 
 **Current state (working in production):**
@@ -41,7 +42,8 @@ User Browser (Vite + React SPA)
     │
     ├── supabase.functions.invoke() → Supabase Edge Functions (Deno)
     │       ├── tcg-ebay-search          (eBay Browse API + Finding API)
-    │       └── pricecharting-tcg-lookup (reads DB with service role, writes cache)
+    │       ├── pricecharting-tcg-lookup (reads DB with service role, writes cache)
+    │       └── tcg-gemrate-search       (GemRate population lookup per card)
     │
     └── Vercel CDN (static SPA delivery + Supabase env vars)
 ```
@@ -206,7 +208,7 @@ The edge function:
 6. Returns matched card's `loose_price`, `graded_price`, computed `estimatedProfit`, `roiPercent`, and a `matchConfidence` of `high | medium | low`
 7. Writes result to `pricecharting_cache`
 
-Low-confidence matches are suppressed client-side — the card shows "No PSA 10 data" instead.
+Low-confidence matches are **shown** with an "approx." marker — they are no longer suppressed. Only a complete `no_match` from the edge function results in "No PSA 10 data".
 
 A session-level `Map<string, PricechartingResult | null>` in `usePricechartingLookup` deduplicates within a browser session so the same card title never makes two requests.
 
@@ -396,7 +398,7 @@ The confidence label appears in the `RoiFeedCard` row as a color-coded pill:
 - Medium: amber
 - Low: muted red
 
-**Note:** Confidence is not gem rate. Gem rate (what % of submissions grade PSA 10) is a separate signal that is not yet integrated. The gem rate placeholder appears in the UI but is always `—`.
+**Note:** Confidence is not gem rate. GemRate data (PSA population count + match confidence) is now integrated via `tcg-gemrate-search` and shows as "Pop NNNN" with a High/Med/Low confidence pill in `TerminalCard`. This is population count — how many copies have been graded — not true gem rate (% that grade PSA 10).
 
 ---
 
@@ -411,12 +413,12 @@ The confidence label appears in the `RoiFeedCard` row as a color-coded pill:
 
 | Label | Criteria | What it signals |
 |-------|----------|-----------------|
-| New Release Momentum | Name contains known new-set token (sv09, op12, twilight masquerade, etc.) | Recent set — price discovery in progress |
+| New Release | Name contains known new-set token (sv09, op12, twilight masquerade, etc.) | Recent set — price discovery in progress |
 | High Upside | ROI ≥ 200% AND raw $10–$80 | High percentage gain in an accessible price range |
-| Spread Widening | Profit ≥ $80 | Meaningful dollar opportunity regardless of % |
+| High Spread | Profit ≥ $80 | Meaningful dollar opportunity regardless of % |
 | Heating Up | ROI ≥ 50% AND name contains a heat character (charizard, luffy, mewtwo, etc.) | Popular character with growing spread |
 
-**Priority order** (only one label fires per card): New Release Momentum → High Upside → Spread Widening → Heating Up.
+**Priority order** (only one label fires per card): New Release → High Upside → High Spread → Heating Up.
 
 **Constraint:** Hotness only fires for Medium+ confidence cards. This is deliberate — hot badges on low-confidence data are misleading.
 
@@ -463,14 +465,15 @@ Card tile for eBay listings. Includes:
 - Listing price (BIN or auction current bid)
 - Card title (cleaned of emoji/excess whitespace, truncated to 60 chars)
 - Profit block (only for BIN listings): appears after lazy `usePricechartingLookup` resolves
-  - Shows: Raw market value · PSA 10 market value · Gem (placeholder `—`)
-  - Shows: Estimated profit (+$XX or -$XX in green/red) and ROI%
-  - `~est` label appears for medium-confidence matches
-  - Shows "No PSA 10 data" if no match or low confidence
+  - Label: **"Spread Est."** — clarifies this is an estimate, not a guaranteed profit
+  - Shows: Raw est. · PSA 10 est. · Pop (GemRate total grades) + confidence pill
+  - Shows: Profit (+$XX or -$XX in green/red) and ROI%
+  - `approx.` marker appears for medium/low-confidence matches
+  - Shows "No PSA 10 data" only when no match exists (low-confidence matches ARE shown)
 - Hot badge in image overlay (top-left, below eBay chip)
 - Watchlist star (session-only, no persistence)
 - "PSA 10" button → eBay sold comps link
-- "Gem" button → gemrate.com search link
+- "Gem" button → gemrate.com search link (opens GemRate for further population research)
 - Copy button → copies cleaned title to clipboard
 
 ### TcgHeader (`src/components/tcg-lab/TcgHeader.tsx`)
@@ -602,6 +605,31 @@ await supabase.functions.invoke('pricecharting-tcg-lookup', {
 
 ---
 
+### `tcg-gemrate-search`
+
+**Purpose:** Looks up a card's PSA population count on GemRate by name. Returns total grades and a match confidence level.
+
+**Invocation:**
+```typescript
+await supabase.functions.invoke('tcg-gemrate-search', {
+  body: { product_name: string, normalized_name: string, category: 'pokemon' | 'one_piece' }
+});
+```
+
+**Response:**
+```json
+{
+  "totalGrades": 4821,
+  "confidence": "high" | "medium" | "low"
+}
+```
+
+**Integration:** `useTcgGemRateSearch` hook uses `IntersectionObserver` (same pattern as `usePricechartingLookup`) to fire lazily when a card scrolls into view. Both refs are merged onto the same DOM element via a callback ref in `TerminalCard`. The pop count + confidence appear in the "Spread Est." block alongside raw/PSA 10 estimates.
+
+**Note:** This returns *total population* (how many copies have been graded by PSA), not true gem rate (% grading PSA 10). Useful as a supply scarcity signal.
+
+---
+
 ### Sports edge functions (beta)
 
 | Function | Purpose |
@@ -657,12 +685,11 @@ To apply: authenticate Supabase CLI (`npx supabase login`) and run `npx supabase
 
 | Issue | Severity | Notes |
 |-------|----------|-------|
-| **Gem rate not integrated** | Medium | Every card shows `Gem —`. The `sports-ebay-gem-rate` edge function exists for sports but no equivalent for TCG. PSA Population Reports would need to be scraped or licensed. |
+| **Gem rate shows population, not gem %** | Low | `tcg-gemrate-search` returns total PSA grades (population). True gem rate (% that grade PSA 10) is not yet computed. Pop count is still useful signal for supply scarcity. |
 | **Hot feed is fully heuristic** | Medium | Hot badges reflect static price thresholds, not trend data. No time-series pricing. A card can stay "Hot" indefinitely with no real momentum. |
 | **No PriceCharting refresh pipeline** | Medium | `pricecharting_tcg_cards` is a static snapshot. Prices drift over time. Without a scheduled refresh job, the data will age. |
 | **`tcg_entities` coverage is thin** | Low-Medium | 20 entities. Searching for a card not in the entity list requires using quick/free search mode. |
 | **Client-side scoring scalability** | Low (now) | 600-row client-side fetch is fine at current scale. Will need the RPC approach if the table or fetch limit grows. |
-| **Dead code: `src/lib/api/firecrawl.ts`** | Low | References a `firecrawl-scrape` edge function that doesn't exist. Not imported anywhere. Safe to delete. |
 | **Pending migration unapplied** | Low | `20260422200000_tcg_top_roi_rpc.sql` creates the `get_tcg_top_roi` RPC. The app does not use it, but it is in the repo. Apply or delete it. |
 | **`tcg_targets` partially superseded** | Low | `tcg_targets` and `tcg_sets` / `tcg_traits` are the legacy guided search system. `tcg_entities` is the new system. The hooks for targets/traits still exist and are used in some components. |
 | **No error monitoring** | Low | No Sentry, no Datadog. Errors surface in Vercel runtime logs only. Adding Sentry would take ~30 minutes. |
@@ -851,10 +878,11 @@ src/
 │   └── rankListings.ts        ← (legacy) listing ranking — check if still used
 │
 ├── hooks/
-│   ├── useTopRoi.ts           ← Top ROI feed data fetch + scoring pipeline
-│   ├── useTcgData.ts          ← Entity/set/trait/target data hooks
-│   ├── usePricechartingLookup.ts  ← Per-card lazy price lookup
-│   └── useSportsGemRate.ts    ← Sports gem rate (requires manual auth header)
+│   ├── useTopRoi.ts               ← Top ROI feed data fetch + scoring pipeline
+│   ├── useTcgData.ts              ← Entity/set/trait/target data hooks
+│   ├── usePricechartingLookup.ts  ← Per-card lazy price lookup (IntersectionObserver)
+│   ├── useTcgGemRateSearch.ts     ← Per-card lazy GemRate pop lookup (IntersectionObserver)
+│   └── useSportsGemRate.ts        ← Sports gem rate (requires manual auth header)
 │
 ├── components/tcg-lab/
 │   ├── DiscoveryPanel.tsx     ← Hot cards + Top ROI feed (idle state)
@@ -876,11 +904,13 @@ src/
 
 supabase/
 ├── functions/
-│   ├── tcg-ebay-search/       ← eBay Browse + Finding API proxy
-│   └── pricecharting-tcg-lookup/  ← Title → PriceCharting card matcher
+│   ├── tcg-ebay-search/           ← eBay Browse + Finding API proxy
+│   ├── pricecharting-tcg-lookup/  ← Title → PriceCharting card matcher (GENERIC_TOKENS fix applied)
+│   └── tcg-gemrate-search/        ← Card name → GemRate population count
 │
 └── migrations/
-    ├── 20260422161439_tcg_entities.sql   ← Applied: adds sort_order, seeds 20 entities
+    ├── 20260422161439_tcg_entities.sql    ← Applied: adds sort_order, seeds 20 entities
+    ├── 20260424000002_tcg_entities_create.sql ← Applied: CREATE TABLE IF NOT EXISTS + upsert
     └── 20260422200000_tcg_top_roi_rpc.sql ← NOT APPLIED: get_tcg_top_roi() function
 ```
 

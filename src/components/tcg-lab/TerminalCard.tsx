@@ -23,7 +23,7 @@ function deriveHotness(
     loosePrice >= THRESHOLDS.HIGH_UPSIDE_RAW_MIN &&
     loosePrice <= THRESHOLDS.HIGH_UPSIDE_RAW_MAX
   ) return 'High Upside';
-  if (profit >= THRESHOLDS.SPREAD_WIDENING_MIN_PROFIT) return 'Spread Widening';
+  if (profit >= THRESHOLDS.SPREAD_WIDENING_MIN_PROFIT) return 'High Spread';
   const name = title.toLowerCase();
   if (roi >= THRESHOLDS.HEATING_UP_MIN_ROI && HEAT_NAMES.some(k => name.includes(k))) return 'Heating Up';
   return null;
@@ -191,10 +191,10 @@ export function TerminalCard({ listing, game }: TerminalCardProps) {
                       className="text-[10px] font-semibold tracking-[0.08em] uppercase"
                       style={{ color: profitPositive ? 'rgba(0,200,100,0.7)' : 'rgba(255,80,80,0.7)' }}
                     >
-                      Est. Profit
+                      Spread Est.
                     </span>
                     {(pricingData?.matchConfidence === 'medium' || pricingData?.matchConfidence === 'low') && (
-                      <span className="text-[9px]" style={{ color: 'var(--om-text-3)' }}>~est</span>
+                      <span className="text-[9px]" style={{ color: 'var(--om-text-3)' }}>approx.</span>
                     )}
                   </div>
                   <div className="flex items-baseline justify-between gap-2">
@@ -213,14 +213,14 @@ export function TerminalCard({ listing, game }: TerminalCardProps) {
                   {/* Price + gem data row */}
                   <div className="flex items-center gap-3 mt-1.5 text-[10px]" style={{ color: 'var(--om-text-3)' }}>
                     {pricingData?.rawMarketValue != null && (
-                      <span>Raw <span className="tabular-nums" style={{ color: 'var(--om-text-2)' }}>${pricingData.rawMarketValue.toFixed(0)}</span></span>
+                      <span>Raw est. <span className="tabular-nums" style={{ color: 'var(--om-text-2)' }}>${pricingData.rawMarketValue.toFixed(0)}</span></span>
                     )}
                     {pricingData?.psa10MarketValue != null && (
-                      <span>PSA 10 <span className="tabular-nums" style={{ color: 'var(--om-text-2)' }}>${pricingData.psa10MarketValue.toFixed(0)}</span></span>
+                      <span>PSA 10 est. <span className="tabular-nums" style={{ color: 'var(--om-text-2)' }}>${pricingData.psa10MarketValue.toFixed(0)}</span></span>
                     )}
-                    {/* GemRate data */}
+                    {/* GemRate population data */}
                     {gemLoading ? (
-                      <span style={{ color: 'var(--om-text-3)' }}>Gem …</span>
+                      <span style={{ color: 'var(--om-text-3)' }}>Pop …</span>
                     ) : totalGrades !== null && confStyle ? (
                       <span>
                         Pop <span className="tabular-nums" style={{ color: 'var(--om-text-2)' }}>{totalGrades.toLocaleString()}</span>
@@ -232,7 +232,7 @@ export function TerminalCard({ listing, game }: TerminalCardProps) {
                         </span>
                       </span>
                     ) : (
-                      <span>Gem <span style={{ color: 'var(--om-text-3)' }}>—</span></span>
+                      <span style={{ color: 'var(--om-text-3)' }}>Pop —</span>
                     )}
                   </div>
                 </>

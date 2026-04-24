@@ -9,9 +9,9 @@
 
 export type HotnessLabel =
   | 'Heating Up'
-  | 'Spread Widening'
+  | 'High Spread'
   | 'High Upside'
-  | 'New Release Momentum';
+  | 'New Release';
 
 export type RoiBucket = 'Best ROI' | 'Best Spread' | 'High Confidence' | 'Emerging';
 
@@ -208,13 +208,13 @@ export function getHotnessLabel(
 ): HotnessLabel | null {
   if (confidenceLabel === 'Low') return null;
   const lower = name.toLowerCase();
-  if (NEW_SET_TOKENS.some(t => lower.includes(t))) return 'New Release Momentum';
+  if (NEW_SET_TOKENS.some(t => lower.includes(t))) return 'New Release';
   if (
     roi >= THRESHOLDS.HIGH_UPSIDE_MIN_ROI &&
     raw >= THRESHOLDS.HIGH_UPSIDE_RAW_MIN &&
     raw <= THRESHOLDS.HIGH_UPSIDE_RAW_MAX
   ) return 'High Upside';
-  if (profit >= THRESHOLDS.SPREAD_WIDENING_MIN_PROFIT) return 'Spread Widening';
+  if (profit >= THRESHOLDS.SPREAD_WIDENING_MIN_PROFIT) return 'High Spread';
   if (roi >= THRESHOLDS.HEATING_UP_MIN_ROI && HEAT_NAMES.some(k => lower.includes(k))) return 'Heating Up';
   return null;
 }

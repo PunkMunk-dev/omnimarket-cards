@@ -33,8 +33,8 @@ export const TerminalGrid = React.forwardRef<HTMLDivElement, TerminalGridProps>(
       return (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <PackageX className="h-8 w-8 mb-3" style={{ color: 'var(--om-text-3)' }} />
-          <p className="text-sm mb-1" style={{ color: 'var(--om-text-2)' }}>No cards found for this search.</p>
-          <p className="text-xs" style={{ color: 'var(--om-text-3)' }}>Try adjusting your filters or selecting a different set.</p>
+          <p className="text-sm mb-1" style={{ color: 'var(--om-text-2)' }}>No listings found.</p>
+          <p className="text-xs" style={{ color: 'var(--om-text-3)' }}>Try a broader card name, remove the price filter, or switch search modes.</p>
         </div>
       );
     }

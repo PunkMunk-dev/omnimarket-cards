@@ -54,12 +54,15 @@ export function DiscoveryPanel() {
       {/* Hot Right Now */}
       {(isLoading || hotCards.length > 0) && (
         <section>
-          <div className="flex items-center gap-2 mb-3">
+          <div className="flex items-center gap-2 mb-1">
             <Flame className="h-3.5 w-3.5" style={{ color: 'rgb(255,130,70)' }} />
             <span className="text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: 'var(--om-text-2)' }}>
               Hot Right Now
             </span>
           </div>
+          <p className="text-[10px] mb-3" style={{ color: 'var(--om-text-3)' }}>
+            Based on price spread, ROI, and chase-card keywords — not live market movement.
+          </p>
 
           {isLoading ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
