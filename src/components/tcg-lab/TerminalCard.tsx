@@ -193,7 +193,7 @@ export function TerminalCard({ listing, game }: TerminalCardProps) {
                     >
                       Est. Profit
                     </span>
-                    {pricingData?.matchConfidence === 'medium' && (
+                    {(pricingData?.matchConfidence === 'medium' || pricingData?.matchConfidence === 'low') && (
                       <span className="text-[9px]" style={{ color: 'var(--om-text-3)' }}>~est</span>
                     )}
                   </div>

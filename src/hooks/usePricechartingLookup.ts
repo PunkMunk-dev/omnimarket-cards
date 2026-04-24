@@ -46,11 +46,6 @@ export function usePricechartingLookup(sourceTitle: string, game?: Game) {
               sessionCache.set(cacheKey, null);
               return;
             }
-            // Hide low-confidence results
-            if (data.matchConfidence === 'low') {
-              sessionCache.set(cacheKey, null);
-              return;
-            }
             const result = data as PricechartingResult;
             sessionCache.set(cacheKey, result);
             setPricingData(result);
