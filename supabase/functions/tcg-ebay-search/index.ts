@@ -53,7 +53,10 @@ async function getAccessToken(): Promise<string> {
 
 const BASE_EXCLUSIONS = ['lot', 'bundle', 'bulk', 'collection', 'playset'];
 const SEALED_EXCLUSIONS = ['sealed', 'booster', 'box', 'case', 'pack', 'etb', 'elite trainer', 'blister', 'tin', 'display', 'build battle', 'starter deck'];
-const GRADED_EXCLUSIONS = ['psa', 'bgs', 'sgc', 'cgc', 'graded', 'slab', 'beckett', 'ace', 'mnt'];
+// 'ace' intentionally omitted: eBay exclusion "-ace" is contradictory when the
+// search query itself is "Ace" (One Piece character). ACE-graded cards are
+// caught by the client-side word-boundary regex filter instead.
+const GRADED_EXCLUSIONS = ['psa', 'bgs', 'sgc', 'cgc', 'graded', 'slab', 'beckett', 'mnt'];
 const TCG_JUNK_EXCLUSIONS = ['you pick', 'choose', 'pick', 'random', 'mystery', 'replica', 'proxy', 'custom', 'fanmade', 'digital', 'code', 'online', 'playmat', 'deckbox', 'sleeves', 'toploader', 'binder', 'break', 'breaks', 'repack'];
 
 const DECORATIVE_TERMS = [

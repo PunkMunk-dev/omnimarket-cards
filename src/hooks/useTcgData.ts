@@ -16,6 +16,35 @@ export interface TcgEntityOption {
   slug: string;
 }
 
+// Hardcoded fallback used when the tcg_entities table is missing or empty
+// (e.g. migration not yet applied in production).
+const FALLBACK_ENTITIES: Record<Game, TcgEntityOption[]> = {
+  pokemon: [
+    { id: 'charizard',  label: 'Charizard',  slug: 'charizard'  },
+    { id: 'pikachu',    label: 'Pikachu',    slug: 'pikachu'    },
+    { id: 'mewtwo',     label: 'Mewtwo',     slug: 'mewtwo'     },
+    { id: 'umbreon',    label: 'Umbreon',    slug: 'umbreon'    },
+    { id: 'rayquaza',   label: 'Rayquaza',   slug: 'rayquaza'   },
+    { id: 'lugia',      label: 'Lugia',      slug: 'lugia'      },
+    { id: 'gengar',     label: 'Gengar',     slug: 'gengar'     },
+    { id: 'eevee',      label: 'Eevee',      slug: 'eevee'      },
+    { id: 'blastoise',  label: 'Blastoise',  slug: 'blastoise'  },
+    { id: 'venusaur',   label: 'Venusaur',   slug: 'venusaur'   },
+    { id: 'mew',        label: 'Mew',        slug: 'mew'        },
+    { id: 'alakazam',   label: 'Alakazam',   slug: 'alakazam'   },
+  ],
+  one_piece: [
+    { id: 'luffy',       label: 'Luffy',       slug: 'luffy'       },
+    { id: 'shanks',      label: 'Shanks',      slug: 'shanks'      },
+    { id: 'zoro',        label: 'Zoro',        slug: 'zoro'        },
+    { id: 'nami',        label: 'Nami',        slug: 'nami'        },
+    { id: 'ace',         label: 'Ace',         slug: 'ace'         },
+    { id: 'law',         label: 'Law',         slug: 'law'         },
+    { id: 'yamato',      label: 'Yamato',      slug: 'yamato'      },
+    { id: 'boa-hancock', label: 'Boa Hancock', slug: 'boa-hancock' },
+  ],
+};
+
 export function useTcgEntities(game: Game | null) {
   return useQuery({
     queryKey: ['tcg-entities', game],
@@ -26,8 +55,12 @@ export function useTcgEntities(game: Game | null) {
         .select('id, name, slug')
         .eq('category', game)
         .order('sort_order');
-      if (error) throw error;
-      return (data ?? []).map((e: { id: string; name: string; slug: string }) => ({
+      if (error || !data || data.length === 0) {
+        // Table missing or empty in production — use hardcoded fallback so the
+        // Chase dropdown always has options until the migration is applied.
+        return FALLBACK_ENTITIES[game] ?? [];
+      }
+      return (data as { id: string; name: string; slug: string }[]).map(e => ({
         id: e.id,
         label: e.name,
         slug: e.slug,

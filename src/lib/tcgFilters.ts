@@ -29,7 +29,9 @@ export const POKEMON_CARD_NUMBER_RE = /\b\d{1,3}\/\d{1,3}\b/;
 export const OP_CARD_NUMBER_RE = /\bOP\d{2}-\d{3}\b/i;
 const GENERIC_CARD_NUMBER_RE = /\b[A-Z]{1,3}\d{2,3}[-/]\d{2,3}\b/i;
 
-const GRADED_TERMS = ['psa', 'bgs', 'sgc', 'cgc', 'graded', 'slab', 'gem mint', 'beckett', 'ace', 'mnt'];
+const GRADED_TERMS = ['psa', 'bgs', 'sgc', 'cgc', 'graded', 'slab', 'gem mint', 'beckett', 'mnt'];
+// 'ace' requires word-boundary matching — simple includes() would match "Glaceon"
+const GRADED_WORD_TERMS_RE = /\bace\b/i;
 
 const STOP_WORDS = [
   'pokemon', 'one piece', 'tcg', 'card', 'near mint', 'nm', 'mint',
@@ -124,7 +126,7 @@ export function filterTcgListings(
     }
 
     if (options.cardType === 'single') {
-      if (GRADED_TERMS.some(term => titleLower.includes(term))) {
+      if (GRADED_TERMS.some(term => titleLower.includes(term)) || GRADED_WORD_TERMS_RE.test(listing.title)) {
         inc('graded_excluded'); continue;
       }
       if (listing.condition && listing.condition.toLowerCase() === 'graded') {
@@ -132,6 +134,7 @@ export function filterTcgListings(
       }
     } else if (options.cardType === 'slabbed') {
       const hasGraded = GRADED_TERMS.some(term => titleLower.includes(term)) ||
+        GRADED_WORD_TERMS_RE.test(listing.title) ||
         (listing.condition && listing.condition.toLowerCase() === 'graded');
       if (!hasGraded) {
         inc('not_graded'); continue;
