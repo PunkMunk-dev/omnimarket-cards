@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { Copy, Check, Star, Clock } from 'lucide-react';
+import { Copy, Check, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { EbayListing, Game } from '@/types/tcg';
 import { useSharedWatchlist } from '@/contexts/WatchlistContext';
@@ -30,11 +30,33 @@ function deriveHotness(
 }
 
 // Pill style by confidence label
-const CONF_STYLE = {
-  high:   { color: 'rgb(0,200,100)',  label: 'High' },
-  medium: { color: 'rgb(200,160,0)', label: 'Med'  },
-  low:    { color: 'rgb(180,80,80)', label: 'Low'  },
+const GEM_CONF_COLOR = {
+  high:   'rgb(0,200,100)',
+  medium: 'rgb(200,160,0)',
+  low:    'rgb(180,80,80)',
 } as const;
+
+function DataRow({
+  label,
+  value,
+  valueColor,
+}: {
+  label: string;
+  value: string;
+  valueColor?: string;
+}) {
+  return (
+    <div className="flex items-baseline justify-between gap-2">
+      <span className="text-[10px]" style={{ color: 'var(--om-text-3)' }}>{label}</span>
+      <span
+        className="text-[11px] tabular-nums font-medium"
+        style={{ color: valueColor ?? 'var(--om-text-1)' }}
+      >
+        {value}
+      </span>
+    </div>
+  );
+}
 
 interface TerminalCardProps {
   listing: EbayListing;
@@ -100,13 +122,10 @@ export function TerminalCard({ listing, game }: TerminalCardProps) {
 
   const showProfit = actualProfit !== null;
   const profitPositive = actualProfit !== null && actualProfit > 0;
+  const spreadColor = profitPositive ? 'rgb(0,200,100)' : 'rgb(255,80,80)';
+  const isApprox = pricingData?.matchConfidence === 'medium' || pricingData?.matchConfidence === 'low';
 
   const hotnessLabel = deriveHotness(listing.title, actualProfit, actualRoi, listingPrice);
-
-  const gradedCompsUrl = `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(cleanTitle + ' PSA 10')}&LH_Complete=1&LH_Sold=1&_sacat=183454`;
-  const gemUrl = `https://www.gemrate.com/search?q=${encodeURIComponent(cleanTitle)}`;
-
-  const confStyle = gemConfidence ? CONF_STYLE[gemConfidence] : null;
 
   return (
     <div ref={mergedRef} className="om-card overflow-hidden">
@@ -144,108 +163,76 @@ export function TerminalCard({ listing, game }: TerminalCardProps) {
               </div>
               {isAuction && listing.timeRemaining && (
                 <span className="text-[11px] font-medium text-white/60 flex items-center gap-1">
-                  <Clock className="h-2.5 w-2.5" />
                   {listing.timeRemaining}
                 </span>
               )}
             </div>
           </div>
         </div>
+
         <div className="p-3 space-y-2.5">
           <h3 className="text-sm font-medium leading-snug line-clamp-2 min-h-[2.5rem]" style={{ color: 'var(--om-text-0)' }}>{cleanTitle}</h3>
 
-          {/* Profit block — only for BIN listings with a match */}
+          {/* Market data panel — BIN only */}
           {!isAuction && (
             <div
-              className="rounded-lg px-3 py-2.5"
-              style={{
-                background: isPricingLoading
-                  ? 'var(--om-bg-3)'
-                  : showProfit
-                    ? profitPositive
-                      ? 'rgba(0,200,100,0.07)'
-                      : 'rgba(255,60,60,0.07)'
-                    : 'transparent',
-                border: isPricingLoading
-                  ? '1px solid var(--om-border-0)'
-                  : showProfit
-                    ? profitPositive
-                      ? '1px solid rgba(0,200,100,0.28)'
-                      : '1px solid rgba(255,60,60,0.28)'
-                    : '1px solid var(--om-border-0)',
-                minHeight: '60px',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center',
-              }}
+              className="rounded-lg px-3 py-2"
+              style={{ background: 'var(--om-bg-3)', border: '1px solid var(--om-border-0)' }}
             >
               {isPricingLoading ? (
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 py-1">
                   <div className="h-1.5 w-1.5 rounded-full animate-pulse" style={{ background: 'var(--om-text-3)' }} />
-                  <span className="text-[10px]" style={{ color: 'var(--om-text-3)' }}>Loading PSA 10 data…</span>
+                  <span className="text-[10px]" style={{ color: 'var(--om-text-3)' }}>Loading pricing data…</span>
                 </div>
               ) : showProfit ? (
-                <>
-                  <div className="flex items-baseline justify-between gap-1">
-                    <span
-                      className="text-[10px] font-semibold tracking-[0.08em] uppercase"
-                      style={{ color: profitPositive ? 'rgba(0,200,100,0.7)' : 'rgba(255,80,80,0.7)' }}
-                    >
-                      Spread Est.
-                    </span>
-                    {(pricingData?.matchConfidence === 'medium' || pricingData?.matchConfidence === 'low') && (
-                      <span className="text-[9px]" style={{ color: 'var(--om-text-3)' }}>approx.</span>
-                    )}
-                  </div>
-                  <div className="flex items-baseline justify-between gap-2">
-                    <span
-                      className="text-2xl font-bold tabular-nums"
-                      style={{ color: profitPositive ? 'rgb(0,200,100)' : 'rgb(255,80,80)' }}
-                    >
-                      {profitPositive ? '+' : ''}{actualProfit !== null ? `$${actualProfit.toFixed(0)}` : '—'}
-                    </span>
-                    <div className="flex items-center gap-2 text-[11px]" style={{ color: 'var(--om-text-2)' }}>
-                      {actualRoi !== null && (
-                        <span className="tabular-nums font-medium">{actualRoi > 0 ? '+' : ''}{actualRoi}%</span>
-                      )}
-                    </div>
-                  </div>
-                  {/* Price + gem data row */}
-                  <div className="flex items-center gap-3 mt-1.5 text-[10px]" style={{ color: 'var(--om-text-3)' }}>
-                    {pricingData?.rawMarketValue != null && (
-                      <span>Raw est. <span className="tabular-nums" style={{ color: 'var(--om-text-2)' }}>${pricingData.rawMarketValue.toFixed(0)}</span></span>
-                    )}
-                    {pricingData?.psa10MarketValue != null && (
-                      <span>PSA 10 est. <span className="tabular-nums" style={{ color: 'var(--om-text-2)' }}>${pricingData.psa10MarketValue.toFixed(0)}</span></span>
-                    )}
-                    {/* GemRate population data */}
+                <div className="space-y-1">
+                  {pricingData?.rawMarketValue != null && (
+                    <DataRow label="Raw est." value={`$${pricingData.rawMarketValue.toFixed(0)}`} />
+                  )}
+                  {pricingData?.psa10MarketValue != null && (
+                    <DataRow label="PSA 10 est." value={`$${pricingData.psa10MarketValue.toFixed(0)}`} />
+                  )}
+                  <DataRow
+                    label="Spread est."
+                    value={`${profitPositive ? '+' : ''}$${actualProfit!.toFixed(0)}`}
+                    valueColor={spreadColor}
+                  />
+                  {actualRoi !== null && (
+                    <DataRow
+                      label="ROI est."
+                      value={`${actualRoi > 0 ? '+' : ''}${actualRoi}%`}
+                      valueColor={spreadColor}
+                    />
+                  )}
+
+                  {/* GemRate separator + pop data */}
+                  <div style={{ borderTop: '1px solid var(--om-border-0)', marginTop: '6px', paddingTop: '6px' }}>
                     {gemLoading ? (
-                      <span style={{ color: 'var(--om-text-3)' }}>Pop …</span>
-                    ) : totalGrades !== null && confStyle ? (
-                      <span>
-                        Pop <span className="tabular-nums" style={{ color: 'var(--om-text-2)' }}>{totalGrades.toLocaleString()}</span>
-                        <span
-                          className="ml-1 text-[9px] font-semibold px-1 py-0.5 rounded"
-                          style={{ color: confStyle.color, background: `${confStyle.color}1a` }}
-                        >
-                          {confStyle.label}
-                        </span>
-                      </span>
+                      <DataRow label="Pop" value="…" />
+                    ) : totalGrades !== null && gemConfidence ? (
+                      <>
+                        <DataRow label="Pop" value={totalGrades.toLocaleString()} />
+                        <DataRow
+                          label="Match"
+                          value={gemConfidence.charAt(0).toUpperCase() + gemConfidence.slice(1)}
+                          valueColor={GEM_CONF_COLOR[gemConfidence]}
+                        />
+                      </>
                     ) : (
-                      <span style={{ color: 'var(--om-text-3)' }}>Pop —</span>
+                      <DataRow label="Pop" value="—" />
                     )}
                   </div>
-                </>
+
+                  {isApprox && (
+                    <p className="text-[9px] mt-1" style={{ color: 'var(--om-text-3)' }}>approx. — low match confidence</p>
+                  )}
+                </div>
               ) : (
-                <span className="text-[10px]" style={{ color: 'var(--om-text-3)' }}>No PSA 10 data</span>
+                <p className="text-[10px] py-1" style={{ color: 'var(--om-text-3)' }}>No PSA 10 estimate found</p>
               )}
             </div>
           )}
 
-          <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-            <a href={gradedCompsUrl} target="_blank" rel="noopener noreferrer" className="om-btn min-w-[52px] text-center px-2.5 py-1 rounded-full text-[11px] font-semibold bg-red-500/80 text-white hover:bg-red-500 transition-colors">PSA 10</a>
-            <a href={gemUrl} target="_blank" rel="noopener noreferrer" className="om-btn min-w-[42px] text-center px-2.5 py-1 rounded-full text-[11px] font-semibold bg-blue-500/80 text-white hover:bg-blue-500 transition-colors">Gem</a>
-          </div>
           <div className="flex items-center justify-end pt-1" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
             <button
               onClick={async (e) => {
