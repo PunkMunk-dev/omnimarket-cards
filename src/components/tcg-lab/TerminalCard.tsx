@@ -111,8 +111,8 @@ export function TerminalCard({ listing, game }: TerminalCardProps) {
   const showGemSection = gemLoading || gemHasData;
   // Content above the GemRate separator (determines whether separator renders)
   const hasTopContent = (!isAuction && showProfit) || hasPricingContent;
-  // For auctions: only show the panel if there's actually something to display
-  const showPanel = !isAuction || isPricingLoading || hasPricingContent || showGemSection;
+  // Every listing type shows the market panel (with appropriate fallback text when enrichment is missing)
+  const showPanel = true;
 
   const hotnessLabel = deriveHotness(listing.title, actualProfit, actualRoi, listingPrice);
 
@@ -222,6 +222,10 @@ export function TerminalCard({ listing, game }: TerminalCardProps) {
                   {/* Fallback — BIN only, when neither source produced data */}
                   {!isAuction && !hasTopContent && !showGemSection && (
                     <p className="text-[10px] py-1" style={{ color: 'var(--om-text-3)' }}>No PSA 10 estimate found</p>
+                  )}
+                  {/* Fallback — auction only, when neither source produced data */}
+                  {isAuction && !hasTopContent && !showGemSection && (
+                    <p className="text-[10px] py-1" style={{ color: 'var(--om-text-3)' }}>No market data</p>
                   )}
                 </>
               )}

@@ -15,6 +15,10 @@ const GENERIC_TOKENS = new Set([
   'pokemon', 'piece', 'card', 'cards', 'trading', 'tcg',
   'single', 'english', 'japanese', 'korean', 'chinese',
   'the', 'and', 'for', 'with',
+  // eBay listing noise — never appear in PriceCharting product names
+  'guaranteed', 'authentic', 'vintage', 'bundle', 'custom', 'proxy',
+  'playset', 'digital', 'online', 'code', 'choose', 'random',
+  'deckbox', 'sleeves', 'toploader',
 ]);
 
 function normalizeTitle(raw: string): string {
@@ -24,6 +28,8 @@ function normalizeTitle(raw: string): string {
     .replace(/\b(psa|bgs|cgc|sgc|beckett|ace)\s*\d+(\.\d+)?\b/g, '')
     // Strip condition / noise words
     .replace(/\b(mint|near\s*mint|nm-m|nm|lp|mp|hp|poor|graded|raw|ungraded|lot|wow|holo\s*rare)\b/g, '')
+    // Strip eBay listing noise that never appears in card product names
+    .replace(/\b(guaranteed|authentic|vintage|bundle|custom|proxy|playset|digital|online|choose|random|deckbox|sleeves|toploader)\b/g, '')
     // Strip TCG-specific generic prefixes that just add noise
     .replace(/\b(pokemon|one\s*piece|trading\s*card\s*game|tcg|card|cards|english|japanese)\b/g, '')
     // Keep only alphanumeric, spaces, #, /, -

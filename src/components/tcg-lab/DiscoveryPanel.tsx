@@ -158,7 +158,6 @@ export function DiscoveryPanel() {
               {bucketCards.map((card, i) => (
                 <RoiFeedCard key={card.id} card={card} rank={i + 1} />
               ))}
-              <style>{`div > a:last-child { border-bottom: none !important; }`}</style>
             </div>
           )}
         </div>

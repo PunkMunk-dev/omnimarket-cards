@@ -24,8 +24,6 @@ export default function TcgLab() {
     setSelectedSetId(null);
   };
 
-  const selectedSet = sets.find(s => s.id === selectedSetId);
-
   return (
     <div className="om-page-bg relative pb-16 sm:pb-0">
       {/* PSA mosaic texture behind header */}
