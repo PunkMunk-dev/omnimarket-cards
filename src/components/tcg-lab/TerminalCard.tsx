@@ -104,6 +104,16 @@ export function TerminalCard({ listing, game }: TerminalCardProps) {
   const spreadColor = profitPositive ? 'rgb(0,200,100)' : 'rgb(255,80,80)';
   const isApprox = pricingData?.matchConfidence === 'medium' || pricingData?.matchConfidence === 'low';
 
+  // Panel visibility: PriceCharting and GemRate are independent
+  const hasPricingContent = pricingData !== null &&
+    (pricingData.rawMarketValue != null || pricingData.psa10MarketValue != null);
+  const gemHasData = !gemLoading && totalGrades !== null && gemConfidence !== null;
+  const showGemSection = gemLoading || gemHasData;
+  // Content above the GemRate separator (determines whether separator renders)
+  const hasTopContent = (!isAuction && showProfit) || hasPricingContent;
+  // For auctions: only show the panel if there's actually something to display
+  const showPanel = !isAuction || isPricingLoading || hasPricingContent || showGemSection;
+
   const hotnessLabel = deriveHotness(listing.title, actualProfit, actualRoi, listingPrice);
 
   return (
@@ -152,8 +162,8 @@ export function TerminalCard({ listing, game }: TerminalCardProps) {
         <div className="p-3 space-y-2.5">
           <h3 className="text-sm font-medium leading-snug line-clamp-2" style={{ color: 'var(--om-text-0)' }}>{cleanTitle}</h3>
 
-          {/* Market data panel — BIN only */}
-          {!isAuction && (
+          {/* Market data panel — all listing types, but only rendered when there's data */}
+          {showPanel && (
             <div
               className="rounded-lg px-3 py-2.5"
               style={{ background: 'var(--om-bg-3)', border: '1px solid var(--om-border-0)' }}
@@ -163,58 +173,57 @@ export function TerminalCard({ listing, game }: TerminalCardProps) {
                   <div className="h-1.5 w-1.5 rounded-full animate-pulse" style={{ background: 'var(--om-text-3)' }} />
                   <span className="text-[10px]" style={{ color: 'var(--om-text-3)' }}>Loading pricing data…</span>
                 </div>
-              ) : showProfit ? (
-                <div className="space-y-0">
-                  {/* Hero row: Spread + ROI prominently */}
-                  <div className="flex items-baseline justify-between gap-2 pb-1.5">
-                    <span
-                      className="text-[15px] font-bold tabular-nums leading-none"
-                      style={{ color: spreadColor }}
-                    >
-                      {profitPositive ? '+' : ''}${actualProfit!.toFixed(0)}
-                    </span>
-                    {actualRoi !== null && (
-                      <span
-                        className="text-[13px] font-semibold tabular-nums leading-none"
-                        style={{ color: spreadColor }}
-                      >
-                        {actualRoi > 0 ? '+' : ''}{actualRoi}%
+              ) : (
+                <>
+                  {/* Hero row: Spread + ROI — BIN only, requires psa10 value */}
+                  {!isAuction && showProfit && (
+                    <div className="flex items-baseline justify-between gap-2 pb-1.5">
+                      <span className="text-[15px] font-bold tabular-nums leading-none" style={{ color: spreadColor }}>
+                        {profitPositive ? '+' : ''}${actualProfit!.toFixed(0)}
                       </span>
-                    )}
-                  </div>
+                      {actualRoi !== null && (
+                        <span className="text-[13px] font-semibold tabular-nums leading-none" style={{ color: spreadColor }}>
+                          {actualRoi > 0 ? '+' : ''}{actualRoi}%
+                        </span>
+                      )}
+                    </div>
+                  )}
 
-                  {/* Supporting row: Raw · PSA 10 muted */}
-                  {(pricingData?.rawMarketValue != null || pricingData?.psa10MarketValue != null) && (
+                  {/* Raw · PSA 10 — shown whenever PriceCharting matched (BIN or auction) */}
+                  {hasPricingContent && (
                     <p className="text-[10px] tabular-nums pb-1.5" style={{ color: 'var(--om-text-3)' }}>
-                      {pricingData?.rawMarketValue != null && <>Raw ${pricingData.rawMarketValue.toFixed(0)}</>}
-                      {pricingData?.rawMarketValue != null && pricingData?.psa10MarketValue != null && <> · </>}
-                      {pricingData?.psa10MarketValue != null && <>PSA 10 ${pricingData.psa10MarketValue.toFixed(0)}</>}
+                      {pricingData!.rawMarketValue != null && <>Raw ${pricingData!.rawMarketValue.toFixed(0)}</>}
+                      {pricingData!.rawMarketValue != null && pricingData!.psa10MarketValue != null && <> · </>}
+                      {pricingData!.psa10MarketValue != null && <>PSA 10 ${pricingData!.psa10MarketValue.toFixed(0)}</>}
                     </p>
                   )}
 
-                  {/* GemRate row */}
-                  <div style={{ borderTop: '1px solid rgba(128,128,128,0.12)', paddingTop: '6px' }}>
-                    {gemLoading ? (
-                      <p className="text-[10px]" style={{ color: 'var(--om-text-3)' }}>Pop …</p>
-                    ) : totalGrades !== null && gemConfidence ? (
-                      <p className="text-[10px] tabular-nums" style={{ color: 'var(--om-text-3)' }}>
-                        Pop {totalGrades.toLocaleString()}
-                        {' · '}
-                        <span style={{ color: GEM_CONF_COLOR[gemConfidence] }}>
-                          {gemConfidence.charAt(0).toUpperCase() + gemConfidence.slice(1)}
-                        </span>
-                      </p>
-                    ) : (
-                      <p className="text-[10px]" style={{ color: 'var(--om-text-3)' }}>Pop —</p>
-                    )}
-                  </div>
+                  {/* GemRate — independent of PriceCharting, shown whenever available */}
+                  {showGemSection && (
+                    <div style={hasTopContent ? { borderTop: '1px solid rgba(128,128,128,0.12)', paddingTop: '6px' } : undefined}>
+                      {gemLoading ? (
+                        <p className="text-[10px]" style={{ color: 'var(--om-text-3)' }}>Pop …</p>
+                      ) : (
+                        <p className="text-[10px] tabular-nums" style={{ color: 'var(--om-text-3)' }}>
+                          Pop {totalGrades!.toLocaleString()}
+                          {' · '}
+                          <span style={{ color: GEM_CONF_COLOR[gemConfidence!] }}>
+                            {gemConfidence!.charAt(0).toUpperCase() + gemConfidence!.slice(1)}
+                          </span>
+                        </p>
+                      )}
+                    </div>
+                  )}
 
                   {isApprox && (
                     <p className="text-[9px] mt-1 opacity-50" style={{ color: 'var(--om-text-3)' }}>approx.</p>
                   )}
-                </div>
-              ) : (
-                <p className="text-[10px] py-1" style={{ color: 'var(--om-text-3)' }}>No PSA 10 estimate found</p>
+
+                  {/* Fallback — BIN only, when neither source produced data */}
+                  {!isAuction && !hasTopContent && !showGemSection && (
+                    <p className="text-[10px] py-1" style={{ color: 'var(--om-text-3)' }}>No PSA 10 estimate found</p>
+                  )}
+                </>
               )}
             </div>
           )}
