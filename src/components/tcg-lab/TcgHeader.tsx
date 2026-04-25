@@ -87,7 +87,7 @@ export function TcgHeader({
                 <SearchModeToggle mode={mode} onModeChange={onModeChange} className="scale-90 origin-left" />
               </div>
               {mode === 'quick' && (
-                <QuickSearchInput value={quickQuery} onChange={onQuickQueryChange} placeholder="Search any card... (e.g. Charizard VMAX)" className="mt-2" />
+                <QuickSearchInput value={quickQuery} onChange={onQuickQueryChange} placeholder="Search any card or set…" className="mt-2" />
               )}
             </div>
             <div className="flex items-center gap-2">
@@ -141,7 +141,7 @@ export function TcgHeader({
             </div>
             <div className="flex items-center gap-2.5 flex-1 min-w-0 justify-end flex-wrap">
               {mode === 'quick' ? (
-                <QuickSearchInput value={quickQuery} onChange={onQuickQueryChange} placeholder="Search any card... (e.g. Charizard VMAX)" className="max-w-lg" />
+                <QuickSearchInput value={quickQuery} onChange={onQuickQueryChange} placeholder="Search any card or set…" className="max-w-lg" />
               ) : (
                 guidedFilters
               )}

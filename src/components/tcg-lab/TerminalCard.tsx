@@ -36,27 +36,6 @@ const GEM_CONF_COLOR = {
   low:    'rgb(180,80,80)',
 } as const;
 
-function DataRow({
-  label,
-  value,
-  valueColor,
-}: {
-  label: string;
-  value: string;
-  valueColor?: string;
-}) {
-  return (
-    <div className="flex items-baseline justify-between gap-2">
-      <span className="text-[10px]" style={{ color: 'var(--om-text-3)' }}>{label}</span>
-      <span
-        className="text-[11px] tabular-nums font-medium"
-        style={{ color: valueColor ?? 'var(--om-text-1)' }}
-      >
-        {value}
-      </span>
-    </div>
-  );
-}
 
 interface TerminalCardProps {
   listing: EbayListing;
@@ -171,12 +150,12 @@ export function TerminalCard({ listing, game }: TerminalCardProps) {
         </div>
 
         <div className="p-3 space-y-2.5">
-          <h3 className="text-sm font-medium leading-snug line-clamp-2 min-h-[2.5rem]" style={{ color: 'var(--om-text-0)' }}>{cleanTitle}</h3>
+          <h3 className="text-sm font-medium leading-snug line-clamp-2" style={{ color: 'var(--om-text-0)' }}>{cleanTitle}</h3>
 
           {/* Market data panel — BIN only */}
           {!isAuction && (
             <div
-              className="rounded-lg px-3 py-2"
+              className="rounded-lg px-3 py-2.5"
               style={{ background: 'var(--om-bg-3)', border: '1px solid var(--om-border-0)' }}
             >
               {isPricingLoading ? (
@@ -185,46 +164,53 @@ export function TerminalCard({ listing, game }: TerminalCardProps) {
                   <span className="text-[10px]" style={{ color: 'var(--om-text-3)' }}>Loading pricing data…</span>
                 </div>
               ) : showProfit ? (
-                <div className="space-y-1">
-                  {pricingData?.rawMarketValue != null && (
-                    <DataRow label="Raw est." value={`$${pricingData.rawMarketValue.toFixed(0)}`} />
-                  )}
-                  {pricingData?.psa10MarketValue != null && (
-                    <DataRow label="PSA 10 est." value={`$${pricingData.psa10MarketValue.toFixed(0)}`} />
-                  )}
-                  <DataRow
-                    label="Spread est."
-                    value={`${profitPositive ? '+' : ''}$${actualProfit!.toFixed(0)}`}
-                    valueColor={spreadColor}
-                  />
-                  {actualRoi !== null && (
-                    <DataRow
-                      label="ROI est."
-                      value={`${actualRoi > 0 ? '+' : ''}${actualRoi}%`}
-                      valueColor={spreadColor}
-                    />
+                <div className="space-y-0">
+                  {/* Hero row: Spread + ROI prominently */}
+                  <div className="flex items-baseline justify-between gap-2 pb-1.5">
+                    <span
+                      className="text-[15px] font-bold tabular-nums leading-none"
+                      style={{ color: spreadColor }}
+                    >
+                      {profitPositive ? '+' : ''}${actualProfit!.toFixed(0)}
+                    </span>
+                    {actualRoi !== null && (
+                      <span
+                        className="text-[13px] font-semibold tabular-nums leading-none"
+                        style={{ color: spreadColor }}
+                      >
+                        {actualRoi > 0 ? '+' : ''}{actualRoi}%
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Supporting row: Raw · PSA 10 muted */}
+                  {(pricingData?.rawMarketValue != null || pricingData?.psa10MarketValue != null) && (
+                    <p className="text-[10px] tabular-nums pb-1.5" style={{ color: 'var(--om-text-3)' }}>
+                      {pricingData?.rawMarketValue != null && <>Raw ${pricingData.rawMarketValue.toFixed(0)}</>}
+                      {pricingData?.rawMarketValue != null && pricingData?.psa10MarketValue != null && <> · </>}
+                      {pricingData?.psa10MarketValue != null && <>PSA 10 ${pricingData.psa10MarketValue.toFixed(0)}</>}
+                    </p>
                   )}
 
-                  {/* GemRate separator + pop data */}
-                  <div style={{ borderTop: '1px solid var(--om-border-0)', marginTop: '6px', paddingTop: '6px' }}>
+                  {/* GemRate row */}
+                  <div style={{ borderTop: '1px solid rgba(128,128,128,0.12)', paddingTop: '6px' }}>
                     {gemLoading ? (
-                      <DataRow label="Pop" value="…" />
+                      <p className="text-[10px]" style={{ color: 'var(--om-text-3)' }}>Pop …</p>
                     ) : totalGrades !== null && gemConfidence ? (
-                      <>
-                        <DataRow label="Pop" value={totalGrades.toLocaleString()} />
-                        <DataRow
-                          label="Match"
-                          value={gemConfidence.charAt(0).toUpperCase() + gemConfidence.slice(1)}
-                          valueColor={GEM_CONF_COLOR[gemConfidence]}
-                        />
-                      </>
+                      <p className="text-[10px] tabular-nums" style={{ color: 'var(--om-text-3)' }}>
+                        Pop {totalGrades.toLocaleString()}
+                        {' · '}
+                        <span style={{ color: GEM_CONF_COLOR[gemConfidence] }}>
+                          {gemConfidence.charAt(0).toUpperCase() + gemConfidence.slice(1)}
+                        </span>
+                      </p>
                     ) : (
-                      <DataRow label="Pop" value="—" />
+                      <p className="text-[10px]" style={{ color: 'var(--om-text-3)' }}>Pop —</p>
                     )}
                   </div>
 
                   {isApprox && (
-                    <p className="text-[9px] mt-1" style={{ color: 'var(--om-text-3)' }}>approx. — low match confidence</p>
+                    <p className="text-[9px] mt-1 opacity-50" style={{ color: 'var(--om-text-3)' }}>approx.</p>
                   )}
                 </div>
               ) : (
