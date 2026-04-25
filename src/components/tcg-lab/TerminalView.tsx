@@ -4,7 +4,7 @@ import { Search, X } from 'lucide-react';
 import { TerminalGrid } from './TerminalGrid';
 import { ResultsToolbar, PRICE_RANGES, type PriceRange } from './ResultsToolbar';
 import { searchActiveListings } from '@/services/tcgEbayService';
-import { filterTcgListings, dedupeTcgListings } from '@/lib/tcgFilters';
+import { filterTcgListings, dedupeTcgListings, titleQualityScore } from '@/lib/tcgFilters';
 import type { TcgTarget, TcgSet, Game, SearchFilters } from '@/types/tcg';
 import { Input } from '@/components/ui/input';
 
@@ -85,7 +85,13 @@ export function TerminalView({ target, game, freeQuery, selectedSetId, sets, onT
     const result = dedupeTcgListings(passed);
     let final = result.deduped;
     if (sort === 'best_match') {
-      final = [...final].sort((a, b) => (b.watchCount ?? 0) - (a.watchCount ?? 0));
+      final = [...final].sort((a, b) => {
+        // Primary: eBay watch count (higher = more buyer interest)
+        const watchDiff = (b.watchCount ?? 0) - (a.watchCount ?? 0);
+        if (watchDiff !== 0) return watchDiff;
+        // Secondary: title quality (card number present → more likely to enrich)
+        return titleQualityScore(b) - titleQualityScore(a);
+      });
     }
     return { listings: final, removedCount, dupsRemoved: result.duplicatesRemoved };
   }, [allListings, game, sort]);

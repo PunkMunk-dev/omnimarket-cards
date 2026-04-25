@@ -197,3 +197,22 @@ export function dedupeTcgListings(
 
   return { deduped, duplicatesRemoved: removed };
 }
+
+// ── Title quality score ──────────────────────────────────────────────────────
+// Used as a secondary sort key for Best Match.
+// Cards with a specific card number are far more likely to get a PriceCharting
+// hit (card number carries +60 in edge function scoring). Noise words signal
+// low-quality listings that slipped through filtering.
+
+const TITLE_NOISE_FOR_SCORE = [
+  'lot', 'bundle', 'custom', 'proxy', 'random', 'choose',
+  'playset', 'digital', 'sleeves', 'deckbox', 'toploader',
+];
+
+export function titleQualityScore(listing: ProcessedListing): number {
+  let score = 0;
+  if (listing.cardNumber) score += 1;
+  const title = listing.title.toLowerCase();
+  if (TITLE_NOISE_FOR_SCORE.some(w => title.includes(w))) score -= 3;
+  return score;
+}

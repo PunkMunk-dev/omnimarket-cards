@@ -22,9 +22,10 @@ export const TerminalGrid = React.forwardRef<HTMLDivElement, TerminalGridProps>(
 
     if (error) {
       return (
-        <div className="flex flex-col items-center justify-center py-20">
+        <div className="flex flex-col items-center justify-center py-20 text-center">
           <PackageX className="h-8 w-8 mb-3" style={{ color: 'var(--om-text-3)' }} />
-          <p className="text-xs" style={{ color: 'var(--om-text-2)' }}>Failed to load listings</p>
+          <p className="text-sm mb-1" style={{ color: 'var(--om-text-2)' }}>Market data is temporarily unavailable</p>
+          <p className="text-xs" style={{ color: 'var(--om-text-3)' }}>Listings may still load, but pricing estimates could be missing.</p>
         </div>
       );
     }
@@ -33,8 +34,8 @@ export const TerminalGrid = React.forwardRef<HTMLDivElement, TerminalGridProps>(
       return (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <PackageX className="h-8 w-8 mb-3" style={{ color: 'var(--om-text-3)' }} />
-          <p className="text-sm mb-1" style={{ color: 'var(--om-text-2)' }}>No listings found.</p>
-          <p className="text-xs" style={{ color: 'var(--om-text-3)' }}>Try a broader card name, remove the price filter, or switch search modes.</p>
+          <p className="text-sm mb-1" style={{ color: 'var(--om-text-2)' }}>No matching listings found</p>
+          <p className="text-xs" style={{ color: 'var(--om-text-3)' }}>Try a broader card name, remove filters, or switch between BIN and Auctions.</p>
         </div>
       );
     }

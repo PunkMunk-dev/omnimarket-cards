@@ -175,26 +175,29 @@ export function TerminalCard({ listing, game }: TerminalCardProps) {
                 </div>
               ) : (
                 <>
-                  {/* Hero row: Spread + ROI — BIN only, requires psa10 value */}
+                  {/* Hero row: Spread est. + ROI est. — BIN only, requires psa10 value */}
                   {!isAuction && showProfit && (
-                    <div className="flex items-baseline justify-between gap-2 pb-1.5">
-                      <span className="text-[15px] font-bold tabular-nums leading-none" style={{ color: spreadColor }}>
-                        {profitPositive ? '+' : ''}${actualProfit!.toFixed(0)}
-                      </span>
-                      {actualRoi !== null && (
-                        <span className="text-[13px] font-semibold tabular-nums leading-none" style={{ color: spreadColor }}>
-                          {actualRoi > 0 ? '+' : ''}{actualRoi}%
+                    <>
+                      <div className="flex items-baseline justify-between gap-2 pb-0.5">
+                        <span className="text-[15px] font-bold tabular-nums leading-none" style={{ color: spreadColor }}>
+                          {profitPositive ? '+' : ''}${actualProfit!.toFixed(0)}
                         </span>
-                      )}
-                    </div>
+                        {actualRoi !== null && (
+                          <span className="text-[13px] font-semibold tabular-nums leading-none" style={{ color: spreadColor }}>
+                            {actualRoi > 0 ? '+' : ''}{actualRoi}%
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[9px] pb-1.5 opacity-40" style={{ color: 'var(--om-text-3)' }}>Spread est. · ROI est.</p>
+                    </>
                   )}
 
-                  {/* Raw · PSA 10 — shown whenever PriceCharting matched (BIN or auction) */}
+                  {/* Raw est. · PSA 10 est. — shown whenever PriceCharting matched (BIN or auction) */}
                   {hasPricingContent && (
                     <p className="text-[10px] tabular-nums pb-1.5" style={{ color: 'var(--om-text-3)' }}>
-                      {pricingData!.rawMarketValue != null && <>Raw ${pricingData!.rawMarketValue.toFixed(0)}</>}
+                      {pricingData!.rawMarketValue != null && <>Raw est. ${pricingData!.rawMarketValue.toFixed(0)}</>}
                       {pricingData!.rawMarketValue != null && pricingData!.psa10MarketValue != null && <> · </>}
-                      {pricingData!.psa10MarketValue != null && <>PSA 10 ${pricingData!.psa10MarketValue.toFixed(0)}</>}
+                      {pricingData!.psa10MarketValue != null && <>PSA 10 est. ${pricingData!.psa10MarketValue.toFixed(0)}</>}
                     </p>
                   )}
 
@@ -206,7 +209,7 @@ export function TerminalCard({ listing, game }: TerminalCardProps) {
                       ) : (
                         <p className="text-[10px] tabular-nums" style={{ color: 'var(--om-text-3)' }}>
                           Pop {totalGrades!.toLocaleString()}
-                          {' · '}
+                          {' · Match '}
                           <span style={{ color: GEM_CONF_COLOR[gemConfidence!] }}>
                             {gemConfidence!.charAt(0).toUpperCase() + gemConfidence!.slice(1)}
                           </span>
@@ -221,11 +224,14 @@ export function TerminalCard({ listing, game }: TerminalCardProps) {
 
                   {/* Fallback — BIN only, when neither source produced data */}
                   {!isAuction && !hasTopContent && !showGemSection && (
-                    <p className="text-[10px] py-1" style={{ color: 'var(--om-text-3)' }}>No PSA 10 estimate found</p>
+                    <div className="py-1">
+                      <p className="text-[10px]" style={{ color: 'var(--om-text-3)' }}>No verified PSA 10 match</p>
+                      <p className="text-[9px] mt-0.5 opacity-40" style={{ color: 'var(--om-text-3)' }}>Vague or custom listing titles may not match.</p>
+                    </div>
                   )}
                   {/* Fallback — auction only, when neither source produced data */}
                   {isAuction && !hasTopContent && !showGemSection && (
-                    <p className="text-[10px] py-1" style={{ color: 'var(--om-text-3)' }}>No market data</p>
+                    <p className="text-[10px] py-1" style={{ color: 'var(--om-text-3)' }}>No verified market data</p>
                   )}
                 </>
               )}
