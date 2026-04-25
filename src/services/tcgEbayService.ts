@@ -12,8 +12,6 @@ const SEALED_TERMS = [
 const GRADED_TERMS = [
   'psa', 'bgs', 'sgc', 'cgc', 'graded', 'gem mint', 'slab', 'beckett', 'mnt'
 ];
-// 'ace' needs word-boundary matching — 'glaceon'.includes('ace') is true
-const GRADED_ACE_RE = /\bace\b/i;
 
 function buildExcludeTerms(filters: SearchFilters): string[] {
   const terms: string[] = [];
@@ -28,8 +26,7 @@ function filterListings(listings: EbayListing[], filters: SearchFilters): EbayLi
   
   return listings.filter(listing => {
     const titleLower = listing.title.toLowerCase();
-    const matchesExclude = excludeTerms.some(term => titleLower.includes(term.toLowerCase()))
-      || (filters.rawOnly && GRADED_ACE_RE.test(listing.title));
+    const matchesExclude = excludeTerms.some(term => titleLower.includes(term.toLowerCase()));
     if (matchesExclude) return false;
     if (listing.condition && listing.condition.toLowerCase() === 'graded') return false;
     const price = parseFloat(listing.price.value);
