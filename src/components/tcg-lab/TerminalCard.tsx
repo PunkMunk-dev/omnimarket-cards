@@ -192,12 +192,12 @@ export function TerminalCard({ listing, game }: TerminalCardProps) {
                     </>
                   )}
 
-                  {/* Raw est. · PSA 10 est. — shown whenever PriceCharting matched (BIN or auction) */}
+                  {/* Raw est. · PSA 9 est. · PSA 10 est. — shown whenever PriceCharting matched (BIN or auction) */}
                   {hasPricingContent && (
                     <p className="text-[10px] tabular-nums pb-1.5" style={{ color: 'var(--om-text-3)' }}>
                       {pricingData!.rawMarketValue != null && <>Raw est. ${pricingData!.rawMarketValue.toFixed(0)}</>}
-                      {pricingData!.rawMarketValue != null && pricingData!.psa10MarketValue != null && <> · </>}
-                      {pricingData!.psa10MarketValue != null && <>PSA 10 est. ${pricingData!.psa10MarketValue.toFixed(0)}</>}
+                      {pricingData!.psa9MarketValue != null && <> · PSA 9 est. ${pricingData!.psa9MarketValue.toFixed(0)}</>}
+                      {pricingData!.psa10MarketValue != null && <> · PSA 10 est. ${pricingData!.psa10MarketValue.toFixed(0)}</>}
                     </p>
                   )}
 
