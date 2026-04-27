@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { Search, X } from 'lucide-react';
 import { TerminalGrid } from './TerminalGrid';
-import { ResultsToolbar, PRICE_RANGES, type PriceRange } from './ResultsToolbar';
+import { ResultsToolbar, PRICE_RANGES, type PriceRange, type ListingTypeFilter } from './ResultsToolbar';
 import { searchActiveListings } from '@/services/tcgEbayService';
 import { filterTcgListings, dedupeTcgListings, titleQualityScore } from '@/lib/tcgFilters';
 import type { TcgTarget, TcgSet, Game, SearchFilters } from '@/types/tcg';
@@ -22,7 +22,7 @@ export function TerminalView({ target, game, freeQuery, selectedSetId, sets, onT
   const [sort, setSort] = useState<SearchFilters['sort']>('best_match');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [debouncedSearch, setDebouncedSearch] = useState<string>('');
-  const [showAuctionsOnly, setShowAuctionsOnly] = useState(false);
+  const [listingType, setListingType] = useState<ListingTypeFilter>('all');
   const [priceRange, setPriceRange] = useState<PriceRange>('all');
 
   useEffect(() => {
@@ -45,21 +45,24 @@ export function TerminalView({ target, game, freeQuery, selectedSetId, sets, onT
 
   const activeQuery = buildSearchQuery();
 
+  const buyingOptions = listingType === 'auction' ? 'AUCTION' : listingType === 'buy_now' ? 'FIXED_PRICE' : undefined;
+  const isAuctionMode = listingType === 'auction';
+
   const filters: SearchFilters = {
     sort,
     excludeLots: true,
     excludeSealed: true,
     rawOnly: true,
-    minPrice: showAuctionsOnly ? 0 : Math.max(10, priceRangeConfig.min),
-    maxPrice: showAuctionsOnly ? 0 : priceRangeConfig.max,
+    minPrice: isAuctionMode ? 0 : Math.max(10, priceRangeConfig.min),
+    maxPrice: isAuctionMode ? 0 : priceRangeConfig.max,
     cardType: 'single',
-    buyingOptions: showAuctionsOnly ? 'AUCTION' : undefined,
+    buyingOptions,
   };
 
   const {
     data, isLoading, error, hasNextPage, fetchNextPage, isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ['terminal-listings', 'tcg', game, activeQuery, filters, showAuctionsOnly],
+    queryKey: ['terminal-listings', 'tcg', game, activeQuery, filters, listingType],
     queryFn: ({ pageParam = 0 }) => searchActiveListings(activeQuery, filters, 100, pageParam),
     initialPageParam: 0,
     getNextPageParam: (lastPage) => lastPage.hasMore ? lastPage.nextOffset : undefined,
@@ -84,7 +87,7 @@ export function TerminalView({ target, game, freeQuery, selectedSetId, sets, onT
     const { passed, removedCount } = filterTcgListings(allListings, filterOptions);
     const result = dedupeTcgListings(passed);
     let final = result.deduped;
-    if (sort === 'best_match') {
+    if (sort === 'best_match' && !isAuctionMode) {
       final = [...final].sort((a, b) => {
         // Primary: eBay watch count (higher = more buyer interest)
         const watchDiff = (b.watchCount ?? 0) - (a.watchCount ?? 0);
@@ -94,10 +97,22 @@ export function TerminalView({ target, game, freeQuery, selectedSetId, sets, onT
       });
     }
     return { listings: final, removedCount, dupsRemoved: result.duplicatesRemoved };
-  }, [allListings, game, sort]);
+  }, [allListings, game, sort, isAuctionMode]);
+
+  const displayTitle = freeQuery ?? target?.name ?? activeQuery;
 
   return (
     <div className="space-y-4">
+      {/* Header: Live listings for [query] */}
+      <div>
+        <h2 className="text-[15px] font-semibold" style={{ color: 'var(--om-text-0)' }}>
+          Live listings for <span style={{ color: 'var(--om-accent)' }}>{displayTitle}</span>
+        </h2>
+        <p className="text-[11px] mt-0.5" style={{ color: 'var(--om-text-3)' }}>
+          Compare active eBay listings against raw, PSA 9, and PSA 10 estimates.
+        </p>
+      </div>
+
       <div className="relative w-full sm:max-w-xs">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5" style={{ color: 'var(--om-text-3)' }} />
         <Input
@@ -118,13 +133,10 @@ export function TerminalView({ target, game, freeQuery, selectedSetId, sets, onT
       <ResultsToolbar
         resultCount={processedResults?.listings.length ?? 0}
         totalCount={totalFromApi}
-        showAuctionsOnly={showAuctionsOnly}
-        onToggleAuctions={() => {
-          setShowAuctionsOnly(prev => {
-            const next = !prev;
-            setSort(next ? 'ending_soonest' : 'best_match');
-            return next;
-          });
+        listingType={listingType}
+        onListingTypeChange={(type) => {
+          setListingType(type);
+          setSort(type === 'auction' ? 'ending_soonest' : 'best_match');
         }}
         priceRange={priceRange}
         onPriceRangeChange={setPriceRange}

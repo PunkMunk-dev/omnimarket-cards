@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { TcgHeader } from '@/components/tcg-lab/TcgHeader';
 import { TerminalView } from '@/components/tcg-lab/TerminalView';
 import { DiscoveryPanel } from '@/components/tcg-lab/DiscoveryPanel';
@@ -16,12 +17,29 @@ export default function TcgLab() {
   const [mode, setMode] = useState<'guided' | 'quick'>('guided');
   const [quickQuery, setQuickQuery] = useState('');
 
+  const [searchParams] = useSearchParams();
   const { data: sets = [] } = useSets(selectedGame);
+
+  // Allow global header search (and direct links) to pre-populate quick query
+  useEffect(() => {
+    const urlQ = searchParams.get('q');
+    if (urlQ) {
+      setMode('quick');
+      setQuickQuery(urlQ);
+    }
+  }, [searchParams]);
 
   const handleGameChange = (game: Game) => {
     setSelectedGame(game);
     setSelectedTarget(null);
     setSelectedSetId(null);
+  };
+
+  const handleFindListings = (query: string, game: Game) => {
+    setSelectedGame(game);
+    setMode('quick');
+    setQuickQuery(query);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
@@ -77,7 +95,7 @@ export default function TcgLab() {
               onLoadingChange={setIsSearchLoading}
             />
           ) : (
-            <DiscoveryPanel />
+            <DiscoveryPanel onFindListings={handleFindListings} />
           )}
         </main>
       </div>

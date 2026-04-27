@@ -11,6 +11,17 @@ import { HotBadge } from './HotBadge';
 import type { HotnessLabel } from '@/hooks/useTopRoi';
 import { HEAT_NAMES, THRESHOLDS, isSafeFlip } from '@/lib/tcgScoring';
 
+/** Lightweight listing quality indicator — helps user compare which listing is worth inspecting */
+function deriveListingQuality(title: string): 'Clean title match' | 'Raw single' | null {
+  const t = title.toLowerCase();
+  // Skip slabs, lots, or anything that shouldn't pass filters but might slip through
+  if (/psa|bgs|sgc|cgc|graded|slab/.test(t)) return null;
+  if (/lot|bundle|bulk/.test(t)) return null;
+  // Card number present → title is specific, better for matching
+  if (/\b\d+\/\d+\b/.test(title)) return 'Clean title match';
+  return 'Raw single';
+}
+
 function deriveHotness(
   title: string,
   profit: number | null,
@@ -120,6 +131,7 @@ export function TerminalCard({ listing, game }: TerminalCardProps) {
   const showPanel = true;
 
   const hotnessLabel = deriveHotness(listing.title, actualProfit, actualRoi, listingPrice);
+  const listingQuality = deriveListingQuality(listing.title);
 
   return (
     <div ref={mergedRef} className="om-card overflow-hidden">
@@ -205,6 +217,13 @@ export function TerminalCard({ listing, game }: TerminalCardProps) {
                   {hasSafeFloor && (
                     <p className="text-[9px] font-semibold pb-1" style={{ color: 'rgb(10,132,255)' }}>
                       Safe floor
+                    </p>
+                  )}
+
+                  {/* ── Listing quality indicator ── */}
+                  {listingQuality && (
+                    <p className="text-[9px] pb-1" style={{ color: 'var(--om-text-3)' }}>
+                      {listingQuality === 'Clean title match' ? '✓ ' : ''}{listingQuality} · needs manual condition check
                     </p>
                   )}
 

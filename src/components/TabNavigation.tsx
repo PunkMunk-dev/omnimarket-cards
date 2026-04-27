@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { NavLink, useNavigate, Link } from 'react-router-dom';
+import { NavLink, useNavigate, useLocation, Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Search, Sun, Moon } from 'lucide-react';
 import { useTheme } from 'next-themes';
@@ -14,14 +14,21 @@ const tabs = [
 export function TabNavigation() {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
+  const location = useLocation();
   const [headerQuery, setHeaderQuery] = useState('');
   const { theme, setTheme } = useTheme();
+
+  const isOnTcg = location.pathname === '/tcg';
 
   const handleHeaderSearch = (e: React.FormEvent) => {
     e.preventDefault();
     const q = headerQuery.trim();
     if (!q) return;
-    navigate(`/?q=${encodeURIComponent(q)}`);
+    if (isOnTcg) {
+      navigate(`/tcg?q=${encodeURIComponent(q)}`);
+    } else {
+      navigate(`/?q=${encodeURIComponent(q)}`);
+    }
     setHeaderQuery('');
   };
 
@@ -119,7 +126,7 @@ export function TabNavigation() {
                 type="text"
                 value={headerQuery}
                 onChange={(e) => setHeaderQuery(e.target.value)}
-                placeholder="Search any card, set, or player..."
+                placeholder={isOnTcg ? 'Search live card listings…' : 'Search any card, set, or player...'}
                 className="flex h-10 md:h-11 w-full rounded-xl pl-10 pr-3 text-sm transition-all om-input"
               />
             </div>

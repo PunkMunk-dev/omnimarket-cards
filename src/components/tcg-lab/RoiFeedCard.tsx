@@ -4,6 +4,7 @@ import { HotBadge } from './HotBadge';
 import type { TopRoiCard } from '@/hooks/useTopRoi';
 import type { ConfidenceLabel } from '@/lib/tcgScoring';
 import { useTcgGemRateSearch } from '@/hooks/useTcgGemRateSearch';
+import type { Game } from '@/types/tcg';
 
 const CONFIDENCE_STYLE: Record<ConfidenceLabel, { color: string; label: string }> = {
   High:   { color: 'rgb(0,200,100)',   label: 'High' },
@@ -20,11 +21,13 @@ const GEM_CONF_STYLE = {
 interface RoiFeedCardProps {
   card: TopRoiCard;
   rank: number;
+  onFindListings?: (query: string, game: Game) => void;
 }
 
-export function RoiFeedCard({ card, rank }: RoiFeedCardProps) {
+export function RoiFeedCard({ card, rank, onFindListings }: RoiFeedCardProps) {
   const rowRef = useRef<HTMLDivElement>(null);
   const gradedCompsUrl = `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(card.product_name + ' PSA 10')}&LH_Complete=1&LH_Sold=1&_sacat=183454`;
+  const cardGame: Game = card.category === 'onepiece' ? 'one_piece' : 'pokemon';
   const conf = CONFIDENCE_STYLE[card.confidenceLabel];
 
   const gemCategory = card.category === 'onepiece' ? 'one_piece' : 'pokemon';
@@ -42,16 +45,8 @@ export function RoiFeedCard({ card, rank }: RoiFeedCardProps) {
   const gemConfStyle = gemConfidence ? GEM_CONF_STYLE[gemConfidence] : null;
 
   return (
-    <div ref={setRef}>
-      <a
-        href={gradedCompsUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="group flex items-center gap-3 px-4 py-3 transition-colors"
-        style={{ borderBottom: '1px solid var(--om-border-0)' }}
-        onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = 'var(--om-bg-3)')}
-        onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = 'transparent')}
-      >
+    <div ref={setRef} className="group" style={{ borderBottom: '1px solid var(--om-border-0)' }}>
+      <div className="flex items-center gap-3 px-4 py-3">
         {/* Rank */}
         <span className="w-5 text-right text-[11px] tabular-nums shrink-0" style={{ color: 'var(--om-text-3)' }}>
           {rank}
@@ -128,11 +123,35 @@ export function RoiFeedCard({ card, rank }: RoiFeedCardProps) {
           </p>
         </div>
 
-        <ExternalLink
-          className="h-3 w-3 shrink-0 opacity-0 group-hover:opacity-40 transition-opacity"
-          style={{ color: 'var(--om-text-2)' }}
-        />
-      </a>
+        {/* Actions */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {onFindListings && (
+            <button
+              onClick={() => onFindListings(card.product_name, cardGame)}
+              className="text-[10px] font-semibold px-2 py-1 rounded-lg transition-all whitespace-nowrap"
+              style={{
+                background: 'rgba(10,132,255,0.10)',
+                color: 'rgb(10,132,255)',
+                border: '1px solid rgba(10,132,255,0.20)',
+              }}
+              onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = 'rgba(10,132,255,0.18)')}
+              onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = 'rgba(10,132,255,0.10)')}
+            >
+              Find Live Listings
+            </button>
+          )}
+          <a
+            href={gradedCompsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={e => e.stopPropagation()}
+            className="opacity-0 group-hover:opacity-40 transition-opacity"
+            title="View PSA 10 sold comps on eBay"
+          >
+            <ExternalLink className="h-3 w-3" style={{ color: 'var(--om-text-2)' }} />
+          </a>
+        </div>
+      </div>
     </div>
   );
 }

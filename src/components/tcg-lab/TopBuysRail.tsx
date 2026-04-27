@@ -4,6 +4,7 @@ import { ExternalLink, TrendingUp, Zap } from 'lucide-react';
 import type { TopRoiCard } from '@/hooks/useTopRoi';
 import type { LiveBuyResult } from '@/hooks/useLiveBuyListings';
 import { useLiveBuyListings } from '@/hooks/useLiveBuyListings';
+import type { Game } from '@/types/tcg';
 
 // ── Badge logic (shared by both card types) ───────────────────────────────────
 
@@ -178,21 +179,18 @@ interface MarketSignalCardProps {
   card: TopRoiCard;
   badge: BuyBadge;
   supportLine: string | null;
+  onFindListings: (query: string, game: Game) => void;
 }
 
-function MarketSignalCard({ card, badge, supportLine }: MarketSignalCardProps) {
+function MarketSignalCard({ card, badge, supportLine, onFindListings }: MarketSignalCardProps) {
   const style = BADGE_STYLE[badge];
   const ebayUrl = `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(card.product_name + ' PSA 10')}&LH_Complete=1&LH_Sold=1&_sacat=183454`;
+  const cardGame: Game = card.category === 'onepiece' ? 'one_piece' : 'pokemon';
 
   return (
-    <a
-      href={ebayUrl}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="group shrink-0 rounded-2xl flex flex-col transition-all"
-      style={{ width: 220, minWidth: 220, padding: '16px', background: 'var(--om-bg-1)', border: '1px solid var(--om-border-0)', textDecoration: 'none' }}
-      onMouseEnter={e => ((e.currentTarget as HTMLElement).style.borderColor = style.border)}
-      onMouseLeave={e => ((e.currentTarget as HTMLElement).style.borderColor = 'var(--om-border-0)')}
+    <div
+      className="group shrink-0 rounded-2xl flex flex-col"
+      style={{ width: 220, minWidth: 220, padding: '16px', background: 'var(--om-bg-1)', border: '1px solid var(--om-border-0)' }}
     >
       {/* Badge row */}
       <div className="flex items-center justify-between mb-3">
@@ -202,7 +200,16 @@ function MarketSignalCard({ card, badge, supportLine }: MarketSignalCardProps) {
         >
           {style.label}
         </span>
-        <ExternalLink className="h-3 w-3 shrink-0 opacity-0 group-hover:opacity-40 transition-opacity" style={{ color: 'var(--om-text-2)' }} />
+        <a
+          href={ebayUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={e => e.stopPropagation()}
+          className="opacity-0 group-hover:opacity-40 transition-opacity"
+          title="View PSA 10 sold comps on eBay"
+        >
+          <ExternalLink className="h-3 w-3 shrink-0" style={{ color: 'var(--om-text-2)' }} />
+        </a>
       </div>
 
       {/* Card name */}
@@ -234,13 +241,30 @@ function MarketSignalCard({ card, badge, supportLine }: MarketSignalCardProps) {
       </div>
 
       {/* Support line / safe floor */}
-      {supportLine && (
-        <p className="text-[9px] font-medium" style={{ color: style.color, opacity: 0.85 }}>{supportLine}</p>
+      {(supportLine || card.isSafeFlip) && (
+        <p className="text-[9px] font-medium mb-2" style={{ color: supportLine ? style.color : 'rgb(0,200,100)', opacity: 0.85 }}>
+          {supportLine ?? 'Safe floor'}
+        </p>
       )}
-      {!supportLine && card.isSafeFlip && (
-        <p className="text-[9px] font-medium" style={{ color: 'rgb(0,200,100)', opacity: 0.85 }}>Safe floor</p>
-      )}
-    </a>
+
+      {/* Primary CTA */}
+      <button
+        onClick={() => onFindListings(card.product_name, cardGame)}
+        className="w-full text-[11px] font-semibold py-1.5 rounded-xl mt-auto transition-all"
+        style={{
+          background: 'rgba(10,132,255,0.12)',
+          color: 'rgb(10,132,255)',
+          border: '1px solid rgba(10,132,255,0.25)',
+        }}
+        onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = 'rgba(10,132,255,0.20)')}
+        onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = 'rgba(10,132,255,0.12)')}
+      >
+        Find Live Listings
+      </button>
+      <p className="text-[9px] mt-1 text-center" style={{ color: 'var(--om-text-3)' }}>
+        Compare listings against PSA 10 upside
+      </p>
+    </div>
   );
 }
 
@@ -249,9 +273,10 @@ function MarketSignalCard({ card, badge, supportLine }: MarketSignalCardProps) {
 interface TopBuysRailProps {
   cards: TopRoiCard[];
   isLoading: boolean;
+  onFindListings: (query: string, game: Game) => void;
 }
 
-export function TopBuysRail({ cards, isLoading }: TopBuysRailProps) {
+export function TopBuysRail({ cards, isLoading, onFindListings }: TopBuysRailProps) {
   const qualifiedCards = useMemo(
     () => cards.filter(c => c.profit > 0 && c.loose_price >= 10),
     [cards],
@@ -308,7 +333,7 @@ export function TopBuysRail({ cards, isLoading }: TopBuysRailProps) {
         <SectionLabel
           icon={<TrendingUp className="h-3.5 w-3.5" style={{ color: 'var(--om-accent)' }} />}
           title="Market Signals"
-          sub="Based on PriceCharting market averages"
+          sub="Strong spread opportunities — click Find Live Listings to compare active eBay cards"
         />
         <div
           className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1"
@@ -316,7 +341,7 @@ export function TopBuysRail({ cards, isLoading }: TopBuysRailProps) {
         >
           {isLoading
             ? Array.from({ length: 4 }).map((_, i) => <CardSkeleton key={i} />)
-            : marketSignals.map(s => <MarketSignalCard key={s.card.id} {...s} />)
+            : marketSignals.map(s => <MarketSignalCard key={s.card.id} {...s} onFindListings={onFindListings} />)
           }
         </div>
       </div>

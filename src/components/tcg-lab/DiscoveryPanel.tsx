@@ -7,6 +7,10 @@ import { HotBadge } from './HotBadge';
 import { TopBuysRail } from './TopBuysRail';
 import type { Game } from '@/types/tcg';
 
+interface DiscoveryPanelProps {
+  onFindListings: (query: string, game: Game) => void;
+}
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -41,7 +45,7 @@ function applyFilters(
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function DiscoveryPanel() {
+export function DiscoveryPanel({ onFindListings }: DiscoveryPanelProps) {
   const [game, setGame]               = useState<Game>('pokemon');
   const [bucket, setBucket]           = useState<RoiBucket>('High Confidence');
   const [safeFlipsOnly, setSafeFlips] = useState(false);
@@ -67,7 +71,7 @@ export function DiscoveryPanel() {
     <div className="space-y-6 max-w-[900px]">
 
       {/* ── Top Buys Right Now ──────────────────────────────────────────────── */}
-      <TopBuysRail cards={allCards} isLoading={isLoading} />
+      <TopBuysRail cards={allCards} isLoading={isLoading} onFindListings={onFindListings} />
 
       {/* ── Game + filter row ───────────────────────────────────────────────── */}
       <div className="space-y-3">
@@ -213,34 +217,47 @@ export function DiscoveryPanel() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-              {hotCards.map(card => (
-                <a
-                  key={card.id}
-                  href={`https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(card.product_name + ' PSA 10')}&LH_Complete=1&LH_Sold=1&_sacat=183454`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="rounded-xl px-3 py-2.5 transition-colors hover:border-[var(--om-border-1)]"
-                  style={{ background: 'var(--om-bg-2)', border: '1px solid var(--om-border-0)', display: 'block' }}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="text-[12px] font-medium truncate min-w-0" style={{ color: 'var(--om-text-0)' }}>
-                      {card.product_name}
+              {hotCards.map(card => {
+                const cardGame: Game = card.category === 'onepiece' ? 'one_piece' : 'pokemon';
+                return (
+                  <div
+                    key={card.id}
+                    className="rounded-xl px-3 py-2.5"
+                    style={{ background: 'var(--om-bg-2)', border: '1px solid var(--om-border-0)' }}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-[12px] font-medium truncate min-w-0" style={{ color: 'var(--om-text-0)' }}>
+                        {card.product_name}
+                      </p>
+                      <HotBadge label={card.hotnessLabel!} size="xs" />
+                    </div>
+                    <p className="text-[10px] mt-0.5" style={{ color: 'var(--om-text-3)' }}>
+                      Raw ${card.loose_price.toFixed(0)} · PSA 10 ${card.graded_price.toFixed(0)}
                     </p>
-                    <HotBadge label={card.hotnessLabel!} size="xs" />
+                    <div className="flex items-baseline gap-2 mt-1.5 mb-2">
+                      <span className="text-[15px] font-bold tabular-nums" style={{ color: 'rgb(0,200,100)' }}>
+                        +${card.profit.toFixed(0)}
+                      </span>
+                      <span className="text-[10px] tabular-nums" style={{ color: 'var(--om-text-2)' }}>
+                        {card.roi.toFixed(0)}% ROI
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => onFindListings(card.product_name, cardGame)}
+                      className="w-full text-[10px] font-semibold py-1 rounded-lg transition-all"
+                      style={{
+                        background: 'rgba(10,132,255,0.10)',
+                        color: 'rgb(10,132,255)',
+                        border: '1px solid rgba(10,132,255,0.20)',
+                      }}
+                      onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = 'rgba(10,132,255,0.18)')}
+                      onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = 'rgba(10,132,255,0.10)')}
+                    >
+                      Find Live Listings
+                    </button>
                   </div>
-                  <p className="text-[10px] mt-0.5" style={{ color: 'var(--om-text-3)' }}>
-                    Raw ${card.loose_price.toFixed(0)} · PSA 10 ${card.graded_price.toFixed(0)}
-                  </p>
-                  <div className="flex items-baseline gap-2 mt-1.5">
-                    <span className="text-[15px] font-bold tabular-nums" style={{ color: 'rgb(0,200,100)' }}>
-                      +${card.profit.toFixed(0)}
-                    </span>
-                    <span className="text-[10px] tabular-nums" style={{ color: 'var(--om-text-2)' }}>
-                      {card.roi.toFixed(0)}% ROI
-                    </span>
-                  </div>
-                </a>
-              ))}
+                );
+              })}
             </div>
           )}
         </section>
@@ -304,7 +321,7 @@ export function DiscoveryPanel() {
           ) : (
             <div>
               {bucketCards.map((card, i) => (
-                <RoiFeedCard key={card.id} card={card} rank={i + 1} />
+                <RoiFeedCard key={card.id} card={card} rank={i + 1} onFindListings={onFindListings} />
               ))}
             </div>
           )}

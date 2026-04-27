@@ -22,11 +22,13 @@ export const PRICE_RANGES: { value: PriceRange; label: string; min: number; max:
   { value: '500+', label: '$500+', min: 500, max: 0 },
 ];
 
+export type ListingTypeFilter = 'all' | 'auction' | 'buy_now';
+
 interface ResultsToolbarProps {
   resultCount: number;
   totalCount: number;
-  showAuctionsOnly: boolean;
-  onToggleAuctions: () => void;
+  listingType: ListingTypeFilter;
+  onListingTypeChange: (type: ListingTypeFilter) => void;
   priceRange: PriceRange;
   onPriceRangeChange: (range: PriceRange) => void;
   sortOption: SearchFilters['sort'];
@@ -35,7 +37,7 @@ interface ResultsToolbarProps {
 }
 
 export function ResultsToolbar({
-  resultCount, totalCount, showAuctionsOnly, onToggleAuctions,
+  resultCount, totalCount, listingType, onListingTypeChange,
   priceRange, onPriceRangeChange, sortOption, onSortChange, filteredOutCount,
 }: ResultsToolbarProps) {
   return (
@@ -54,17 +56,29 @@ export function ResultsToolbar({
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
-        <button
-          onClick={onToggleAuctions}
-          className={cn(
-            'om-btn om-pill',
-            showAuctionsOnly && 'om-pill-active'
-          )}
-        >
-          Auctions
-        </button>
+        {/* Three-way listing type filter */}
+        <div className="flex items-center rounded-full overflow-hidden" style={{ border: '1px solid var(--om-border-0)' }}>
+          {(['all', 'auction', 'buy_now'] as ListingTypeFilter[]).map((type) => {
+            const label = type === 'all' ? 'All' : type === 'auction' ? 'Auctions' : 'Buy Now';
+            const isActive = listingType === type;
+            return (
+              <button
+                key={type}
+                onClick={() => onListingTypeChange(type)}
+                className={cn('text-[11px] font-semibold px-3 py-1 transition-all', isActive && 'om-pill-active')}
+                style={{
+                  background: isActive ? 'rgba(10,132,255,0.15)' : 'transparent',
+                  color: isActive ? 'rgb(10,132,255)' : 'var(--om-text-2)',
+                  borderRight: type !== 'buy_now' ? '1px solid var(--om-border-0)' : undefined,
+                }}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
 
-        {!showAuctionsOnly && (
+        {listingType !== 'auction' && (
           <Select value={priceRange} onValueChange={(v) => onPriceRangeChange(v as PriceRange)}>
             <SelectTrigger className="h-7 w-[110px] text-[11px] om-input rounded-full border-white/10" title="Filter by eBay listing price">
               <SelectValue />
@@ -87,7 +101,7 @@ export function ResultsToolbar({
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="om-dropdown">
-              {showAuctionsOnly && <SelectItem value="ending_soonest" className="text-xs text-[var(--om-text-1)]">Ending Soonest</SelectItem>}
+              {listingType === 'auction' && <SelectItem value="ending_soonest" className="text-xs text-[var(--om-text-1)]">Ending Soonest</SelectItem>}
               <SelectItem value="newly_listed" className="text-xs text-[var(--om-text-1)]">Newest</SelectItem>
               <SelectItem value="best_match" className="text-xs text-[var(--om-text-1)]">Best Match</SelectItem>
               <SelectItem value="price_low" className="text-xs text-[var(--om-text-1)]">Low to High</SelectItem>
