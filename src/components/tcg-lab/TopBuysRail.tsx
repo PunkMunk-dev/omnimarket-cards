@@ -133,6 +133,9 @@ function LiveBuyCard({ result }: { result: LiveBuyResult }) {
           <p className="text-[9px] mt-0.5" style={{ color: 'var(--om-text-3)' }}>
             est. profit · after ~$25 grading
           </p>
+          <p className="text-[9px] mt-0.5 truncate" style={{ color: 'var(--om-text-3)' }}>
+            {supportLine}
+          </p>
         </div>
 
         {/* 2. Buy Now → PSA 10 Est. */}
@@ -155,15 +158,14 @@ function LiveBuyCard({ result }: { result: LiveBuyResult }) {
           </div>
         </div>
 
-        {/* 3. Confidence badge + support line */}
-        <div className="flex flex-col gap-1 mt-auto">
+        {/* 3. Confidence badge */}
+        <div className="mt-auto">
           <span
             className="self-start text-[9px] font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap overflow-hidden text-ellipsis max-w-full"
             style={{ color: style.color, background: style.bg, border: `1px solid ${style.border}` }}
           >
             {style.label}
           </span>
-          <p className="text-[9px]" style={{ color: 'var(--om-text-3)' }}>{supportLine}</p>
         </div>
       </div>
     </a>

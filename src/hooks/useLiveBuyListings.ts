@@ -3,6 +3,67 @@ import { searchActiveListings } from '@/services/tcgEbayService';
 import type { TopRoiCard } from './useTopRoi';
 import type { EbayListing } from '@/types/tcg';
 
+// ── Match validation helpers ──────────────────────────────────────────────────
+
+/**
+ * Extracts a structured card number from a PriceCharting product_name.
+ * Handles two formats:
+ *   Pokémon  — "#74/172", "215/264" (card number / set size)
+ *   One Piece — "OP01-001", "EB01-006", "ST12-003" (set code + dash + card number)
+ * Returns the normalized lowercase token, or null if none found.
+ */
+function extractCardNumber(productName: string): string | null {
+  const lower = productName.toLowerCase();
+  // Pokémon: optional # then X/Y (1–3 digits slash 1–3 digits)
+  const pokeMatch = lower.match(/#?(\d{1,3}\/\d{1,3})/);
+  if (pokeMatch) return pokeMatch[1];
+  // TCG with alpha-numeric set codes: AB01-001
+  const setMatch = lower.match(/\b([a-z]{2}\d{2}-\d{3})\b/);
+  if (setMatch) return setMatch[1];
+  return null;
+}
+
+/**
+ * Returns the first token from a product name that:
+ *   - has more than 2 characters
+ *   - is not purely numeric
+ *   - contains at least one letter
+ * This is the "core name" signal used to reject unrelated listings.
+ */
+function firstNameToken(productName: string): string | null {
+  return (
+    productName.toLowerCase().split(/\s+/).find(
+      t => t.length > 2 && /[a-z]/.test(t) && !/^\d+$/.test(t),
+    ) ?? null
+  );
+}
+
+/**
+ * Returns true when the eBay listing title plausibly corresponds to the card.
+ *
+ * If a card number is present in product_name:
+ *   Require both the core name token AND the card number to appear in the title.
+ *   This eliminates wrong-variant matches (e.g. a different Charizard card number).
+ *
+ * If no card number is present:
+ *   Require only the core name token.
+ */
+function listingMatchesCard(listing: EbayListing, card: TopRoiCard): boolean {
+  const title = (listing.title ?? '').toLowerCase();
+  if (!title) return false;
+
+  const cardNumber = extractCardNumber(card.product_name);
+  const nameToken  = firstNameToken(card.product_name);
+  const hasCoreMatch = nameToken ? title.includes(nameToken) : true;
+
+  if (cardNumber) {
+    return hasCoreMatch && title.includes(cardNumber);
+  }
+  return hasCoreMatch;
+}
+
+// ── Hook ──────────────────────────────────────────────────────────────────────
+
 export interface LiveBuyResult {
   card: TopRoiCard;
   listing: EbayListing;
@@ -57,7 +118,8 @@ export function useLiveBuyListings(topCards: TopRoiCard[], count = 3): {
   queries.forEach((query, i) => {
     if (!query.data || query.data.length === 0) return;
     const card = cards[i];
-    const listing = query.data[0]; // cheapest BIN listing
+    const listing = query.data.find(l => listingMatchesCard(l, card));
+    if (!listing) return;
     const listingPrice = parseFloat(listing.price.value);
     if (isNaN(listingPrice) || listingPrice <= 0) return;
     const actualProfit = Math.round((card.graded_price - listingPrice - 25) * 100) / 100;
