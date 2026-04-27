@@ -5,6 +5,11 @@
  * No React, no Supabase, no side-effects.
  */
 
+// ── Constants ─────────────────────────────────────────────────────────────────
+
+/** Standard PSA grading cost used across scoring, floor calculations, and UI. */
+export const ESTIMATED_GRADING_COST = 25;
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export type HotnessLabel =
@@ -294,6 +299,26 @@ export function getHotnessLabel(
   if (profit >= THRESHOLDS.SPREAD_WIDENING_MIN_PROFIT) return 'High Spread';
   if (roi >= THRESHOLDS.HEATING_UP_MIN_ROI && HEAT_NAMES.some(k => lower.includes(k))) return 'Heating Up';
   return null;
+}
+
+// ── Safe flip ────────────────────────────────────────────────────────────────
+//
+// A flip is "safe" when the PSA 9 market alone covers the purchase + grading cost,
+// providing a positive-EV exit even if the PSA 10 market softens.
+
+/**
+ * Returns true when PSA 9 market value >= purchasePrice + grading cost.
+ * Returns false when psa9 is null (unknown floor = not safe by definition).
+ */
+export function isSafeFlip(psa9: number | null, purchasePrice: number): boolean {
+  if (psa9 === null) return false;
+  return psa9 >= purchasePrice + ESTIMATED_GRADING_COST;
+}
+
+/** Format a dollar spread as "+$123" or "-$45". */
+export function formatSpread(value: number): string {
+  const abs = Math.abs(Math.round(value));
+  return value >= 0 ? `+$${abs}` : `-$${abs}`;
 }
 
 // ── ROI bucket ────────────────────────────────────────────────────────────────

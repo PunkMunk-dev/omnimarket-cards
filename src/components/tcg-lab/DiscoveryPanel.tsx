@@ -1,10 +1,17 @@
-import { useState } from 'react';
-import { TrendingUp, DollarSign, Shield, Zap, Flame } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { TrendingUp, DollarSign, Shield, Zap, Flame, SlidersHorizontal } from 'lucide-react';
 import { useTopRoi, getRoiBucket } from '@/hooks/useTopRoi';
-import type { RoiBucket } from '@/hooks/useTopRoi';
+import type { TopRoiCard, RoiBucket } from '@/hooks/useTopRoi';
+import { psa9FloorLabel } from '@/lib/tcgScoring';
 import { RoiFeedCard } from './RoiFeedCard';
 import { HotBadge } from './HotBadge';
 import type { Game } from '@/types/tcg';
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+type FloorFilter = 'all' | 'strong' | 'breakeven_plus' | 'hide_weak';
+
+// ── Constants ─────────────────────────────────────────────────────────────────
 
 const GAME_TABS: { key: Game; label: string }[] = [
   { key: 'pokemon',   label: 'Pokémon' },
@@ -18,40 +25,178 @@ const BUCKET_TABS: { key: RoiBucket; label: string; Icon: React.ComponentType<{ 
   { key: 'Emerging',        label: 'Emerging',        Icon: Zap },
 ];
 
+const FLOOR_FILTER_OPTIONS: { key: FloorFilter; label: string }[] = [
+  { key: 'all',           label: 'All Floors' },
+  { key: 'strong',        label: 'Strong Floor' },
+  { key: 'breakeven_plus', label: 'Break-even+' },
+  { key: 'hide_weak',     label: 'Hide Weak' },
+];
+
+// ── Filter logic ──────────────────────────────────────────────────────────────
+
+function applyFilters(
+  cards: TopRoiCard[],
+  floorFilter: FloorFilter,
+  minRaw: number,
+  minPsa10: number,
+): TopRoiCard[] {
+  return cards.filter(card => {
+    // Min price filters
+    if (minRaw > 0 && card.loose_price < minRaw) return false;
+    if (minPsa10 > 0 && card.graded_price < minPsa10) return false;
+
+    // Floor filter — cards with no PSA 9 data are excluded when floor filter is active
+    if (floorFilter !== 'all') {
+      if (card.grade9_price === null) return false;
+      const label = psa9FloorLabel(card.grade9_price, card.loose_price);
+      if (floorFilter === 'strong'        && label !== 'Strong floor')   return false;
+      if (floorFilter === 'breakeven_plus' && label === 'Weak floor')    return false;
+      if (floorFilter === 'hide_weak'      && label === 'Weak floor')    return false;
+    }
+
+    return true;
+  });
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
+
 export function DiscoveryPanel() {
-  const [game, setGame] = useState<Game>('pokemon');
-  const [bucket, setBucket] = useState<RoiBucket>('High Confidence');
+  const [game, setGame]           = useState<Game>('pokemon');
+  const [bucket, setBucket]       = useState<RoiBucket>('High Confidence');
+  const [floorFilter, setFloor]   = useState<FloorFilter>('all');
+  const [minRawStr, setMinRawStr] = useState('');
+  const [minPsa10Str, setMinPsa10Str] = useState('');
+
+  const minRaw  = parseInt(minRawStr,  10) || 0;
+  const minPsa10 = parseInt(minPsa10Str, 10) || 0;
 
   const { data: allCards = [], isLoading } = useTopRoi(game);
 
-  // Hot cards: any card with a hotness label, up to 6
-  const hotCards = allCards.filter(c => c.hotnessLabel !== null).slice(0, 6);
+  const filtersActive = floorFilter !== 'all' || minRaw > 0 || minPsa10 > 0;
 
-  // Bucket cards: filtered + limited to 25
-  const bucketCards = allCards.filter(c => getRoiBucket(c) === bucket).slice(0, 25);
+  const filteredCards = useMemo(
+    () => applyFilters(allCards, floorFilter, minRaw, minPsa10),
+    [allCards, floorFilter, minRaw, minPsa10],
+  );
+
+  const hotCards    = filteredCards.filter(c => c.hotnessLabel !== null).slice(0, 6);
+  const bucketCards = filteredCards.filter(c => getRoiBucket(c) === bucket).slice(0, 25);
 
   return (
-    <div className="space-y-8 max-w-[900px]">
+    <div className="space-y-6 max-w-[900px]">
 
-      {/* Game selector */}
-      <div className="flex items-center gap-2">
-        {GAME_TABS.map(g => (
-          <button
-            key={g.key}
-            onClick={() => setGame(g.key)}
-            className="px-4 py-1.5 rounded-full text-sm font-semibold transition-all"
-            style={{
-              background: game === g.key ? 'var(--om-accent)' : 'var(--om-bg-2)',
-              color: game === g.key ? '#fff' : 'var(--om-text-2)',
-              border: game === g.key ? '1px solid transparent' : '1px solid var(--om-border-0)',
-            }}
-          >
-            {g.label}
-          </button>
-        ))}
+      {/* ── Game + filter row ───────────────────────────────────────────────── */}
+      <div className="space-y-3">
+        {/* Game selector */}
+        <div className="flex items-center gap-2">
+          {GAME_TABS.map(g => (
+            <button
+              key={g.key}
+              onClick={() => setGame(g.key)}
+              className="px-4 py-1.5 rounded-full text-sm font-semibold transition-all"
+              style={{
+                background: game === g.key ? 'var(--om-accent)' : 'var(--om-bg-2)',
+                color: game === g.key ? '#fff' : 'var(--om-text-2)',
+                border: game === g.key ? '1px solid transparent' : '1px solid var(--om-border-0)',
+              }}
+            >
+              {g.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Filter bar */}
+        <div
+          className="rounded-xl px-3 py-2.5 space-y-2.5"
+          style={{ background: 'var(--om-bg-2)', border: '1px solid var(--om-border-0)' }}
+        >
+          {/* Header row */}
+          <div className="flex items-center gap-1.5">
+            <SlidersHorizontal className="h-3 w-3" style={{ color: 'var(--om-text-3)' }} />
+            <span className="text-[10px] font-semibold uppercase tracking-[0.1em]" style={{ color: 'var(--om-text-3)' }}>
+              Filters
+            </span>
+            {filtersActive && (
+              <button
+                onClick={() => { setFloor('all'); setMinRawStr(''); setMinPsa10Str(''); }}
+                className="ml-auto text-[9px] font-semibold px-2 py-0.5 rounded-full transition-colors"
+                style={{
+                  color: 'var(--om-accent)',
+                  background: 'rgba(10,132,255,0.08)',
+                  border: '1px solid rgba(10,132,255,0.2)',
+                }}
+              >
+                Clear
+              </button>
+            )}
+          </div>
+
+          {/* PSA 9 floor pills */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-[9px]" style={{ color: 'var(--om-text-3)' }}>PSA 9 Floor</span>
+            {FLOOR_FILTER_OPTIONS.map(opt => (
+              <button
+                key={opt.key}
+                onClick={() => setFloor(opt.key)}
+                className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold transition-all whitespace-nowrap"
+                style={{
+                  background: floorFilter === opt.key ? 'rgba(10,132,255,0.12)' : 'var(--om-bg-3)',
+                  color: floorFilter === opt.key ? 'rgb(10,132,255)' : 'var(--om-text-2)',
+                  border: floorFilter === opt.key ? '1px solid rgba(10,132,255,0.3)' : '1px solid var(--om-border-0)',
+                }}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Min price inputs */}
+          <div className="flex items-center gap-3 flex-wrap">
+            <span className="text-[9px]" style={{ color: 'var(--om-text-3)' }}>Min Price</span>
+            <label className="flex items-center gap-1">
+              <span className="text-[9px]" style={{ color: 'var(--om-text-3)' }}>Raw $</span>
+              <input
+                type="number"
+                min={0}
+                step={5}
+                value={minRawStr}
+                onChange={e => setMinRawStr(e.target.value)}
+                placeholder="0"
+                className="w-16 text-[10px] tabular-nums rounded-md px-2 py-0.5 outline-none"
+                style={{
+                  background: 'var(--om-bg-3)',
+                  border: '1px solid var(--om-border-0)',
+                  color: 'var(--om-text-1)',
+                }}
+              />
+            </label>
+            <label className="flex items-center gap-1">
+              <span className="text-[9px]" style={{ color: 'var(--om-text-3)' }}>PSA 10 $</span>
+              <input
+                type="number"
+                min={0}
+                step={25}
+                value={minPsa10Str}
+                onChange={e => setMinPsa10Str(e.target.value)}
+                placeholder="0"
+                className="w-20 text-[10px] tabular-nums rounded-md px-2 py-0.5 outline-none"
+                style={{
+                  background: 'var(--om-bg-3)',
+                  border: '1px solid var(--om-border-0)',
+                  color: 'var(--om-text-1)',
+                }}
+              />
+            </label>
+            {filtersActive && !isLoading && (
+              <span className="text-[9px] ml-auto" style={{ color: 'var(--om-text-3)' }}>
+                {filteredCards.length} of {allCards.length} cards
+              </span>
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* Hot Right Now */}
+      {/* ── Hot Right Now ───────────────────────────────────────────────────── */}
       {(isLoading || hotCards.length > 0) && (
         <section>
           <div className="flex items-center gap-2 mb-1">
@@ -109,16 +254,16 @@ export function DiscoveryPanel() {
         </section>
       )}
 
-      {/* Top ROI feed */}
+      {/* ── Top ROI feed ─────────────────────────────────────────────────────── */}
       <section>
         <div className="flex items-center gap-2 mb-3">
           <TrendingUp className="h-3.5 w-3.5" style={{ color: 'var(--om-accent)' }} />
           <span className="text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: 'var(--om-text-2)' }}>
             Top ROI Opportunities
           </span>
-          {!isLoading && allCards.length > 0 && (
+          {!isLoading && filteredCards.length > 0 && (
             <span className="text-[10px] ml-auto" style={{ color: 'var(--om-text-3)' }}>
-              {allCards.length} cards ranked · $25 grading cost included
+              {filteredCards.length} cards ranked · $25 grading cost included
             </span>
           )}
         </div>
@@ -151,7 +296,18 @@ export function DiscoveryPanel() {
             </div>
           ) : bucketCards.length === 0 ? (
             <div className="py-10 text-center">
-              <p className="text-[12px]" style={{ color: 'var(--om-text-3)' }}>No cards in this bucket</p>
+              <p className="text-[12px]" style={{ color: 'var(--om-text-3)' }}>
+                {filtersActive ? 'No cards match the active filters' : 'No cards in this bucket'}
+              </p>
+              {filtersActive && (
+                <button
+                  onClick={() => { setFloor('all'); setMinRawStr(''); setMinPsa10Str(''); }}
+                  className="mt-2 text-[11px]"
+                  style={{ color: 'var(--om-accent)' }}
+                >
+                  Clear filters
+                </button>
+              )}
             </div>
           ) : (
             <div>

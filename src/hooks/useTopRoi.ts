@@ -8,6 +8,7 @@ import {
   computeOpportunityScoreV2,
   getHotnessLabel,
   getRoiBucket as _getRoiBucket,
+  isSafeFlip,
 } from '@/lib/tcgScoring';
 
 // Re-export types so existing imports keep working
@@ -29,6 +30,7 @@ export interface TopRoiCard {
   profit: number;
   roi: number;
   psa9Spread: number | null;  // psa9 - loose_price (raw DB spread, not listing-price spread)
+  isSafeFlip: boolean;        // psa9 >= loose_price + grading cost
   confidence: number;
   confidenceLabel: import('@/lib/tcgScoring').ConfidenceLabel;
   opportunityScore: number;
@@ -103,6 +105,7 @@ export function useTopRoi(game: Game | null, limit = 150) {
             profit,
             roi,
             psa9Spread,
+            isSafeFlip: isSafeFlip(psa9, raw),
             confidence,
             confidenceLabel,
             opportunityScore,
