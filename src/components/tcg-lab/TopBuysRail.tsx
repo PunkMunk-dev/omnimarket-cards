@@ -77,7 +77,7 @@ export function TopBuysRail({ cards, isLoading }: TopBuysRailProps) {
             Top Buys Right Now
           </span>
           <p className="text-[10px] mt-0.5" style={{ color: 'var(--om-text-3)' }}>
-            Live opportunities with strongest profit potential
+            Market signals ranked by PSA 10 spread and downside support
           </p>
         </div>
       </div>
@@ -154,21 +154,21 @@ export function TopBuysRail({ cards, isLoading }: TopBuysRailProps) {
                       {profitPositive ? '+' : ''}${card.profit.toFixed(0)}
                     </p>
                     <p className="text-[9px] mt-0.5 font-medium uppercase tracking-[0.08em]" style={{ color: 'var(--om-text-3)' }}>
-                      profit potential
+                      potential
                     </p>
                   </div>
 
-                  {/* Buy → Sell price row */}
+                  {/* Raw Est. → PSA 10 Est. price row */}
                   <div className="flex items-center gap-1.5 mb-2">
                     <div className="text-center">
-                      <p className="text-[9px] font-semibold uppercase tracking-[0.06em]" style={{ color: 'var(--om-text-3)' }}>Buy</p>
+                      <p className="text-[9px] font-semibold uppercase tracking-[0.06em]" style={{ color: 'var(--om-text-3)' }}>Raw Est.</p>
                       <p className="text-[13px] font-bold tabular-nums" style={{ color: 'var(--om-text-1)' }}>
                         ${card.loose_price.toFixed(0)}
                       </p>
                     </div>
                     <span className="text-[10px] mx-0.5" style={{ color: 'var(--om-text-3)' }}>→</span>
                     <div className="text-center">
-                      <p className="text-[9px] font-semibold uppercase tracking-[0.06em]" style={{ color: 'var(--om-text-3)' }}>PSA 10</p>
+                      <p className="text-[9px] font-semibold uppercase tracking-[0.06em]" style={{ color: 'var(--om-text-3)' }}>PSA 10 Est.</p>
                       <p className="text-[13px] font-bold tabular-nums" style={{ color: 'var(--om-text-1)' }}>
                         ${card.graded_price.toFixed(0)}
                       </p>
