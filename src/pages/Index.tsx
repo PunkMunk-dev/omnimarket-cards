@@ -326,7 +326,7 @@ export default function Index() {
 
                   {/* Signal pills */}
                   <div className="mt-8 flex items-center gap-2 flex-wrap justify-center">
-                    {['Raw Price', 'PSA 10 Comp', 'Profit Spread', 'ROI %', 'Gem Rate'].map(label => (
+                    {['Raw Price', 'PSA 10 Comp', 'Profit Spread', 'Gem Rate', 'Safe Floor'].map(label => (
                       <span
                         key={label}
                         className="px-3 py-1 rounded-full text-[11px] font-medium"
