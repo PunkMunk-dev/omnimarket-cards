@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { toast } from "sonner";
 import { Loader2, ArrowRight, ChevronRight, Star, X } from "lucide-react";
-import psaMosaic from "@/assets/psa-mosaic.jpg";
+import heroBg from "@/assets/hero-bg.jpg";
 import { Button } from "@/components/ui/button";
 import { SearchFilters } from "@/components/SearchFilters";
 import { ListingGrid } from "@/components/ListingGrid";
@@ -238,115 +238,173 @@ export default function Index() {
         ) : hasSearched ? (
           <EmptyState query={query} />
         ) : (
-          <div className="relative overflow-hidden" style={{ background: `linear-gradient(180deg, var(--om-bg-0) 0%, var(--om-bg-1) 50%, var(--om-bg-0) 100%)`, color: 'var(--om-text-0)' }}>
-            {/* Hero spotlight ambient pulse */}
-            <div className="omni-hero-spotlight" />
-            {/* Grid texture */}
-            <div className="pointer-events-none absolute inset-0 opacity-[0.04]" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)', backgroundSize: '32px 32px' }} />
-            {/* PSA mosaic blurred texture */}
+          <div>
+            {/* ── Hero — illustration background ──────────────────────────────── */}
+            <div className="relative overflow-hidden" style={{ minHeight: '88vh' }}>
+              {/* Background illustration */}
+              <img
+                src={heroBg}
+                alt=""
+                className="absolute inset-0 w-full h-full object-cover"
+                style={{ objectPosition: 'center 25%' }}
+                fetchPriority="high"
+                loading="eager"
+              />
+
+              {/* Gradient overlays — darken for text legibility while preserving illustration */}
+              {/* Left-to-right: strongest where text sits, dissolves toward the characters */}
+              <div
+                className="absolute inset-0"
+                style={{
+                  background: 'linear-gradient(105deg, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.62) 38%, rgba(0,0,0,0.28) 62%, rgba(0,0,0,0.08) 100%)',
+                }}
+              />
+              {/* Top fade */}
+              <div
+                className="absolute top-0 left-0 right-0 h-24"
+                style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.35) 0%, transparent 100%)' }}
+              />
+              {/* Bottom fade into page background */}
+              <div
+                className="absolute bottom-0 left-0 right-0 h-48"
+                style={{ background: 'linear-gradient(to top, var(--om-bg-0) 0%, transparent 100%)' }}
+              />
+
+              {/* Content — always white text over illustration */}
+              <div className="relative z-10 mx-auto w-full max-w-[1400px] px-4 md:px-6 lg:px-8">
+                <div className="flex flex-col items-center text-center justify-center py-20 md:py-32" style={{ minHeight: '88vh' }}>
+                  <span
+                    className="text-[11px] font-medium uppercase tracking-[0.30em]"
+                    style={{ color: 'rgba(255,255,255,0.60)' }}
+                  >
+                    OmniMarket Cards · Pokémon &amp; One Piece
+                  </span>
+
+                  <h1
+                    className="mt-5 text-[40px] md:text-[56px] font-semibold tracking-[-0.03em] leading-[1.05] max-w-[640px]"
+                    style={{ color: '#ffffff', textShadow: '0 2px 24px rgba(0,0,0,0.4)' }}
+                  >
+                    Raw-to-PSA-10 Profit Intelligence. Live.
+                  </h1>
+
+                  <p
+                    className="mt-5 max-w-[480px] text-[15px] leading-[1.6]"
+                    style={{ color: 'rgba(255,255,255,0.68)' }}
+                  >
+                    See exactly which Pokémon and One Piece cards are underpriced right now — raw price, PSA 10 comp, profit spread, and ROI in one view.
+                  </p>
+
+                  <div className="mt-8 flex items-center gap-3 flex-wrap justify-center">
+                    <button
+                      onClick={handleExploreMarkets}
+                      className="inline-flex items-center justify-center rounded-xl h-11 px-7 text-sm font-semibold hover:-translate-y-px active:scale-[0.98] transition-all duration-200"
+                      style={{
+                        background: 'var(--om-accent)',
+                        color: '#fff',
+                        boxShadow: '0 8px 28px rgba(10,132,255,0.35)',
+                      }}
+                    >
+                      Find Opportunities <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      onClick={handleStartSearching}
+                      className="inline-flex items-center justify-center rounded-xl h-11 px-7 text-sm font-semibold hover:-translate-y-px active:scale-[0.98] transition-all duration-200"
+                      style={{
+                        background: 'rgba(255,255,255,0.10)',
+                        border: '1px solid rgba(255,255,255,0.22)',
+                        color: '#ffffff',
+                        backdropFilter: 'blur(8px)',
+                      }}
+                    >
+                      View Live Market
+                    </button>
+                  </div>
+
+                  <p className="mt-4 text-[12px]" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                    Stop guessing. See the spread.
+                  </p>
+
+                  {/* Signal pills */}
+                  <div className="mt-8 flex items-center gap-2 flex-wrap justify-center">
+                    {['Raw Price', 'PSA 10 Comp', 'Profit Spread', 'ROI %', 'Gem Rate'].map(label => (
+                      <span
+                        key={label}
+                        className="px-3 py-1 rounded-full text-[11px] font-medium"
+                        style={{
+                          background: 'rgba(255,255,255,0.08)',
+                          border: '1px solid rgba(255,255,255,0.14)',
+                          color: 'rgba(255,255,255,0.65)',
+                          backdropFilter: 'blur(6px)',
+                        }}
+                      >
+                        {label}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* ── Market Tiles — theme-aware ───────────────────────────────────── */}
             <div
-              className="pointer-events-none absolute inset-0 scale-110 blur-[28px] opacity-[0.07]"
-              style={{
-                backgroundImage: `url(${psaMosaic})`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                maskImage: 'radial-gradient(ellipse at center, black 40%, transparent 75%)',
-                WebkitMaskImage: 'radial-gradient(ellipse at center, black 40%, transparent 75%)',
-              }}
-            />
-            {/* Cyan glow top-left */}
-            <div className="pointer-events-none absolute -top-40 -left-40 w-[600px] h-[600px] rounded-full blur-[140px]" style={{ background: 'rgba(10,132,255,0.10)' }} />
-            {/* Blue glow bottom-right */}
-            <div className="pointer-events-none absolute -bottom-40 -right-40 w-[600px] h-[600px] rounded-full blur-[140px]" style={{ background: 'rgba(10,132,255,0.08)' }} />
-
-            <div className="relative mx-auto w-full max-w-[1400px] px-4 md:px-6 lg:px-8">
-              {/* ── Hero — centered single column ── */}
-              <div className="flex flex-col items-center text-center min-h-[70vh] justify-center py-16 md:py-24">
-                <span className="text-[11px] font-medium uppercase tracking-[0.30em]" style={{ color: 'var(--om-text-1)' }}>OmniMarket Cards · Pokémon &amp; One Piece</span>
-
-                <h1 className="mt-6 text-[36px] md:text-[48px] font-semibold tracking-[-0.03em] leading-[1.08] max-w-[640px]" style={{ color: 'var(--om-text-0)' }}>
-                  Raw-to-PSA-10 Profit Intelligence. Live.
-                </h1>
-                <p className="mt-4 max-w-[500px] text-[14px] leading-[1.55]" style={{ color: 'var(--om-text-2)' }}>
-                  See exactly which Pokémon and One Piece cards are underpriced right now — raw price, PSA 10 comp, profit spread, and ROI in one view.
-                </p>
-
-                <div className="mt-6 flex items-center gap-3 flex-wrap justify-center">
-                  <button
-                    onClick={handleExploreMarkets}
-                    className="inline-flex items-center justify-center rounded-xl h-11 px-6 text-sm font-medium hover:-translate-y-px active:scale-[0.98] transition-all duration-200"
-                    style={{ background: 'var(--om-accent)', color: '#fff', boxShadow: '0 10px 30px rgba(10,132,255,0.20)' }}
-                  >
-                    Find Opportunities <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
-                  </button>
-                  <button
-                    onClick={handleStartSearching}
-                    className="inline-flex items-center justify-center rounded-xl h-11 px-6 text-sm font-medium hover:-translate-y-px active:scale-[0.98] transition-all duration-200"
-                    style={{ background: 'var(--om-border-0)', border: '1px solid var(--om-border-1)', color: 'var(--om-text-0)' }}
-                  >
-                    View Live Market
-                  </button>
-                </div>
-
-                <p className="mt-4 text-[12px]" style={{ color: 'var(--om-text-3)' }}>
-                  Stop guessing. See the spread.
-                </p>
-
-                {/* Signal pills */}
-                <div className="mt-8 flex items-center gap-2 flex-wrap justify-center">
-                  {['Raw Price', 'PSA 10 Comp', 'Profit Spread', 'ROI %', 'Gem Rate'].map(label => (
-                    <span key={label} className="px-3 py-1 rounded-full text-[11px] font-medium" style={{ background: 'var(--om-bg-2)', border: '1px solid var(--om-border-0)', color: 'var(--om-text-2)' }}>
-                      {label}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              {/* ── Market Tiles ── */}
-              <div ref={marketTilesRef} className="mt-8 pb-20 space-y-4">
-                {/* TCG — primary tile, full width */}
-                <Link
-                  to="/tcg"
-                  className="group rounded-3xl p-10 hover:-translate-y-[3px] transition-all duration-200 flex flex-col md:flex-row md:items-center md:justify-between gap-6"
-                  style={{ background: 'var(--om-bg-2)', border: '1px solid var(--om-border-0)', boxShadow: '0 20px 60px var(--glass-shadow)', transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)' }}
-                >
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="text-[18px] font-semibold" style={{ color: 'var(--om-text-0)' }}>TCG Profit Intelligence</h3>
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase" style={{ background: 'rgba(10,132,255,0.12)', color: 'rgb(10,132,255)' }}>Live</span>
-                    </div>
-                    <p className="text-[14px]" style={{ color: 'var(--om-text-2)' }}>Pokémon &amp; One Piece. See raw price, PSA 10 comp, profit spread, and ROI on every live eBay listing — instantly.</p>
-                    <div className="flex items-center gap-3 mt-3 flex-wrap">
-                      {['Charizard', 'Luffy', 'Pikachu', 'Shanks', 'Mewtwo'].map(name => (
-                        <span key={name} className="text-[11px] font-medium" style={{ color: 'var(--om-text-3)' }}>{name}</span>
-                      ))}
-                    </div>
+              ref={marketTilesRef}
+              className="mx-auto w-full max-w-[1400px] px-4 md:px-6 lg:px-8 pb-20 space-y-4"
+              style={{ paddingTop: '2rem' }}
+            >
+              {/* TCG — primary tile */}
+              <Link
+                to="/tcg"
+                className="group rounded-3xl p-10 hover:-translate-y-[3px] transition-all duration-200 flex flex-col md:flex-row md:items-center md:justify-between gap-6"
+                style={{
+                  background: 'var(--om-bg-2)',
+                  border: '1px solid var(--om-border-0)',
+                  boxShadow: '0 20px 60px var(--glass-shadow)',
+                  transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
+                }}
+              >
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="text-[18px] font-semibold" style={{ color: 'var(--om-text-0)' }}>TCG Profit Intelligence</h3>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase" style={{ background: 'rgba(10,132,255,0.12)', color: 'rgb(10,132,255)' }}>Live</span>
                   </div>
-                  <span className="inline-flex items-center justify-center rounded-xl h-11 px-6 text-sm font-medium shrink-0 hover:-translate-y-px active:scale-[0.98] transition-all duration-200" style={{ background: 'var(--om-accent)', color: '#fff' }}>
-                    Explore TCG Market <ArrowRight className="ml-2 h-3.5 w-3.5" />
-                  </span>
-                </Link>
-
-                {/* Sports — secondary tile */}
-                <Link
-                  to="/sports"
-                  className="group rounded-2xl px-8 py-6 hover:-translate-y-[2px] transition-all duration-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
-                  style={{ background: 'var(--om-bg-1)', border: '1px solid var(--om-border-0)', transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)' }}
-                >
-                  <div className="flex items-center gap-3">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-[14px] font-semibold" style={{ color: 'var(--om-text-0)' }}>Sports Market</h3>
-                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide" style={{ background: 'rgba(255,180,0,0.12)', color: 'rgb(200,150,0)' }}>Beta</span>
-                      </div>
-                      <p className="text-[12px]" style={{ color: 'var(--om-text-3)' }}>NBA · NFL · MLB — filter by player, brand, and traits</p>
-                    </div>
+                  <p className="text-[14px]" style={{ color: 'var(--om-text-2)' }}>
+                    Pokémon &amp; One Piece. See raw price, PSA 10 comp, profit spread, and ROI on every live eBay listing — instantly.
+                  </p>
+                  <div className="flex items-center gap-3 mt-3 flex-wrap">
+                    {['Charizard', 'Luffy', 'Pikachu', 'Shanks', 'Mewtwo'].map(name => (
+                      <span key={name} className="text-[11px] font-medium" style={{ color: 'var(--om-text-3)' }}>{name}</span>
+                    ))}
                   </div>
-                  <span className="inline-flex items-center gap-1.5 text-sm font-medium shrink-0" style={{ color: 'var(--om-text-2)' }}>
-                    View <ChevronRight className="h-4 w-4" />
-                  </span>
-                </Link>
-              </div>
+                </div>
+                <span
+                  className="inline-flex items-center justify-center rounded-xl h-11 px-6 text-sm font-medium shrink-0 hover:-translate-y-px active:scale-[0.98] transition-all duration-200"
+                  style={{ background: 'var(--om-accent)', color: '#fff' }}
+                >
+                  Explore TCG Market <ArrowRight className="ml-2 h-3.5 w-3.5" />
+                </span>
+              </Link>
+
+              {/* Sports — secondary tile */}
+              <Link
+                to="/sports"
+                className="group rounded-2xl px-8 py-6 hover:-translate-y-[2px] transition-all duration-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+                style={{
+                  background: 'var(--om-bg-1)',
+                  border: '1px solid var(--om-border-0)',
+                  transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
+                }}
+              >
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-[14px] font-semibold" style={{ color: 'var(--om-text-0)' }}>Sports Market</h3>
+                    <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide" style={{ background: 'rgba(255,180,0,0.12)', color: 'rgb(200,150,0)' }}>Beta</span>
+                  </div>
+                  <p className="text-[12px]" style={{ color: 'var(--om-text-3)' }}>NBA · NFL · MLB — filter by player, brand, and traits</p>
+                </div>
+                <span className="inline-flex items-center gap-1.5 text-sm font-medium shrink-0" style={{ color: 'var(--om-text-2)' }}>
+                  View <ChevronRight className="h-4 w-4" />
+                </span>
+              </Link>
             </div>
           </div>
         )}
