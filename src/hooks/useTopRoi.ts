@@ -86,8 +86,11 @@ export function useTopRoi(game: Game | null, limit = 150) {
           const psa9 = (c.grade9_price ?? null) as number | null;
           const name = (c.normalized_name || c.product_name || '') as string;
 
+          // profit = raw DB spread (PSA10 - loose); grading cost excluded intentionally —
+          // this is a market-level ranking signal, not a take-home profit figure.
           const profit = Math.round((graded - raw) * 100) / 100;
-          const roi = Math.round((profit / raw) * 10) / 10;
+          // roi stored as a true percentage (e.g., 150.0 = 150%) for correct threshold comparisons
+          const roi = Math.round((profit / raw) * 1000) / 10;
           const psa9Spread = psa9 !== null ? Math.round((psa9 - raw) * 100) / 100 : null;
 
           const { score: confidence, label: confidenceLabel } = computeConfidence(raw, graded);

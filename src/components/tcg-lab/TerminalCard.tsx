@@ -9,7 +9,7 @@ import { usePricechartingLookup } from '@/hooks/usePricechartingLookup';
 import { useTcgGemRateSearch } from '@/hooks/useTcgGemRateSearch';
 import { HotBadge } from './HotBadge';
 import type { HotnessLabel } from '@/hooks/useTopRoi';
-import { HEAT_NAMES, THRESHOLDS, psa9FloorLabel } from '@/lib/tcgScoring';
+import { HEAT_NAMES, THRESHOLDS, isSafeFlip } from '@/lib/tcgScoring';
 
 function deriveHotness(
   title: string,
@@ -89,11 +89,14 @@ export function TerminalCard({ listing, game }: TerminalCardProps) {
   const isAuction = listing.listingType === 'AUCTION';
   const listingPrice = parseFloat(listing.price.value);
 
+  // actualProfit = PSA10 market avg − eBay listing price − $25 grading cost
+  // Uses the real listing price (what the user pays), making this an honest estimate.
   const actualProfit =
-    pricingData?.psa10MarketValue !== null && pricingData?.psa10MarketValue !== undefined && !isAuction && !isNaN(listingPrice)
+    pricingData?.psa10MarketValue != null && !isAuction && !isNaN(listingPrice)
       ? Math.round((pricingData.psa10MarketValue - listingPrice - 25) * 100) / 100
       : null;
 
+  // ROI retained for hotness labeling only — not displayed
   const actualRoi =
     actualProfit !== null && listingPrice > 0
       ? Math.round((actualProfit / listingPrice) * 100)
@@ -102,7 +105,9 @@ export function TerminalCard({ listing, game }: TerminalCardProps) {
   const showProfit = actualProfit !== null;
   const profitPositive = actualProfit !== null && actualProfit > 0;
   const spreadColor = profitPositive ? 'rgb(0,200,100)' : 'rgb(255,80,80)';
-  const isApprox = pricingData?.matchConfidence === 'medium' || pricingData?.matchConfidence === 'low';
+
+  // Safe floor: PSA9 market covers the eBay listing price + $25 grading cost
+  const hasSafeFloor = !isAuction && isSafeFlip(pricingData?.psa9MarketValue ?? null, listingPrice);
 
   // Panel visibility: PriceCharting and GemRate are independent
   const hasPricingContent = pricingData !== null &&
@@ -171,74 +176,61 @@ export function TerminalCard({ listing, game }: TerminalCardProps) {
               {isPricingLoading ? (
                 <div className="flex items-center gap-1.5 py-1">
                   <div className="h-1.5 w-1.5 rounded-full animate-pulse" style={{ background: 'var(--om-text-3)' }} />
-                  <span className="text-[10px]" style={{ color: 'var(--om-text-3)' }}>Loading pricing data…</span>
+                  <span className="text-[10px]" style={{ color: 'var(--om-text-3)' }}>Loading…</span>
                 </div>
               ) : (
                 <>
-                  {/* Hero row: Spread est. + ROI est. — BIN only, requires psa10 value */}
+                  {/* ── PRIMARY: profit est. — BIN only, requires PSA10 ── */}
                   {!isAuction && showProfit && (
-                    <>
-                      <div className="flex items-baseline justify-between gap-2 pb-0.5">
-                        <span className="text-[15px] font-bold tabular-nums leading-none" style={{ color: spreadColor }}>
-                          {profitPositive ? '+' : ''}${actualProfit!.toFixed(0)}
-                        </span>
-                        {actualRoi !== null && (
-                          <span className="text-[13px] font-semibold tabular-nums leading-none" style={{ color: spreadColor }}>
-                            {actualRoi > 0 ? '+' : ''}{actualRoi}%
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-[9px] pb-1.5 opacity-40" style={{ color: 'var(--om-text-3)' }}>Spread est. · ROI est.</p>
-                    </>
+                    <div className="pb-1.5">
+                      <span className="text-[17px] font-bold tabular-nums leading-none" style={{ color: spreadColor }}>
+                        {profitPositive ? '+' : ''}${actualProfit!.toFixed(0)}
+                      </span>
+                      <span className="ml-1.5 text-[9px] opacity-40" style={{ color: 'var(--om-text-3)' }}>
+                        est. if PSA 10
+                      </span>
+                    </div>
                   )}
 
-                  {/* Raw est. · PSA 9 est. · PSA 10 est. — shown whenever PriceCharting matched (BIN or auction) */}
+                  {/* ── SECONDARY: price anchors ── */}
                   {hasPricingContent && (
-                    <p className="text-[10px] tabular-nums pb-1.5" style={{ color: 'var(--om-text-3)' }}>
-                      {pricingData!.rawMarketValue != null && <>Raw est. ${pricingData!.rawMarketValue.toFixed(0)}</>}
+                    <p className="text-[10px] tabular-nums pb-1" style={{ color: 'var(--om-text-3)' }}>
+                      {pricingData!.psa10MarketValue != null && <>PSA 10 est. ${pricingData!.psa10MarketValue.toFixed(0)}</>}
                       {pricingData!.psa9MarketValue != null && <> · PSA 9 est. ${pricingData!.psa9MarketValue.toFixed(0)}</>}
-                      {pricingData!.psa10MarketValue != null && <> · PSA 10 est. ${pricingData!.psa10MarketValue.toFixed(0)}</>}
+                      {pricingData!.rawMarketValue != null && <> · Raw est. ${pricingData!.rawMarketValue.toFixed(0)}</>}
                     </p>
                   )}
 
-                  {/* PSA 9 floor label — only when psa9 data present and BIN */}
-                  {!isAuction && pricingData?.psa9MarketValue != null && (
-                    <p className="text-[9px] pb-1 opacity-60" style={{ color: 'var(--om-text-3)' }}>
-                      {psa9FloorLabel(pricingData.psa9MarketValue, listingPrice)}
+                  {/* ── Safe floor badge — when PSA9 covers entry price ── */}
+                  {hasSafeFloor && (
+                    <p className="text-[9px] font-semibold pb-1" style={{ color: 'rgb(10,132,255)' }}>
+                      Safe floor
                     </p>
                   )}
 
-                  {/* GemRate — independent of PriceCharting, shown whenever available */}
+                  {/* ── Gem rate — separated when pricing is also present ── */}
                   {showGemSection && (
-                    <div style={hasTopContent ? { borderTop: '1px solid rgba(128,128,128,0.12)', paddingTop: '6px' } : undefined}>
+                    <div style={hasTopContent ? { borderTop: '1px solid rgba(128,128,128,0.10)', paddingTop: '5px' } : undefined}>
                       {gemLoading ? (
                         <p className="text-[10px]" style={{ color: 'var(--om-text-3)' }}>Pop …</p>
                       ) : (
                         <p className="text-[10px] tabular-nums" style={{ color: 'var(--om-text-3)' }}>
                           Pop {totalGrades!.toLocaleString()}
-                          {' · Match '}
+                          {' · '}
                           <span style={{ color: GEM_CONF_COLOR[gemConfidence!] }}>
-                            {gemConfidence!.charAt(0).toUpperCase() + gemConfidence!.slice(1)}
+                            {gemConfidence!.charAt(0).toUpperCase() + gemConfidence!.slice(1)} match
                           </span>
                         </p>
                       )}
                     </div>
                   )}
 
-                  {isApprox && (
-                    <p className="text-[9px] mt-1 opacity-50" style={{ color: 'var(--om-text-3)' }}>approx.</p>
-                  )}
-
-                  {/* Fallback — BIN only, when neither source produced data */}
+                  {/* ── Fallbacks ── */}
                   {!isAuction && !hasTopContent && !showGemSection && (
-                    <div className="py-1">
-                      <p className="text-[10px]" style={{ color: 'var(--om-text-3)' }}>No verified PSA 10 match</p>
-                      <p className="text-[9px] mt-0.5 opacity-40" style={{ color: 'var(--om-text-3)' }}>Vague or custom listing titles may not match.</p>
-                    </div>
+                    <p className="text-[10px] py-0.5" style={{ color: 'var(--om-text-3)' }}>No verified match</p>
                   )}
-                  {/* Fallback — auction only, when neither source produced data */}
                   {isAuction && !hasTopContent && !showGemSection && (
-                    <p className="text-[10px] py-1" style={{ color: 'var(--om-text-3)' }}>No verified market data</p>
+                    <p className="text-[10px] py-0.5" style={{ color: 'var(--om-text-3)' }}>No market data</p>
                   )}
                 </>
               )}

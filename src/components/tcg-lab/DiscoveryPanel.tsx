@@ -2,14 +2,11 @@ import { useState, useMemo } from 'react';
 import { TrendingUp, DollarSign, Shield, Zap, Flame, SlidersHorizontal } from 'lucide-react';
 import { useTopRoi, getRoiBucket } from '@/hooks/useTopRoi';
 import type { TopRoiCard, RoiBucket } from '@/hooks/useTopRoi';
-import { psa9FloorLabel } from '@/lib/tcgScoring';
 import { RoiFeedCard } from './RoiFeedCard';
 import { HotBadge } from './HotBadge';
 import type { Game } from '@/types/tcg';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
-
-type FloorFilter = 'all' | 'strong' | 'breakeven_plus' | 'hide_weak';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -25,35 +22,18 @@ const BUCKET_TABS: { key: RoiBucket; label: string; Icon: React.ComponentType<{ 
   { key: 'Emerging',        label: 'Emerging',        Icon: Zap },
 ];
 
-const FLOOR_FILTER_OPTIONS: { key: FloorFilter; label: string }[] = [
-  { key: 'all',           label: 'All Floors' },
-  { key: 'strong',        label: 'Strong Floor' },
-  { key: 'breakeven_plus', label: 'Break-even+' },
-  { key: 'hide_weak',     label: 'Hide Weak' },
-];
-
 // ── Filter logic ──────────────────────────────────────────────────────────────
 
 function applyFilters(
   cards: TopRoiCard[],
-  floorFilter: FloorFilter,
+  safeFlipsOnly: boolean,
   minRaw: number,
   minPsa10: number,
 ): TopRoiCard[] {
   return cards.filter(card => {
-    // Min price filters
     if (minRaw > 0 && card.loose_price < minRaw) return false;
     if (minPsa10 > 0 && card.graded_price < minPsa10) return false;
-
-    // Floor filter — cards with no PSA 9 data are excluded when floor filter is active
-    if (floorFilter !== 'all') {
-      if (card.grade9_price === null) return false;
-      const label = psa9FloorLabel(card.grade9_price, card.loose_price);
-      if (floorFilter === 'strong'        && label !== 'Strong floor')   return false;
-      if (floorFilter === 'breakeven_plus' && label === 'Weak floor')    return false;
-      if (floorFilter === 'hide_weak'      && label === 'Weak floor')    return false;
-    }
-
+    if (safeFlipsOnly && !card.isSafeFlip) return false;
     return true;
   });
 }
@@ -61,22 +41,22 @@ function applyFilters(
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function DiscoveryPanel() {
-  const [game, setGame]           = useState<Game>('pokemon');
-  const [bucket, setBucket]       = useState<RoiBucket>('High Confidence');
-  const [floorFilter, setFloor]   = useState<FloorFilter>('all');
-  const [minRawStr, setMinRawStr] = useState('');
+  const [game, setGame]               = useState<Game>('pokemon');
+  const [bucket, setBucket]           = useState<RoiBucket>('High Confidence');
+  const [safeFlipsOnly, setSafeFlips] = useState(false);
+  const [minRawStr, setMinRawStr]     = useState('');
   const [minPsa10Str, setMinPsa10Str] = useState('');
 
-  const minRaw  = parseInt(minRawStr,  10) || 0;
+  const minRaw   = parseInt(minRawStr,   10) || 0;
   const minPsa10 = parseInt(minPsa10Str, 10) || 0;
 
   const { data: allCards = [], isLoading } = useTopRoi(game);
 
-  const filtersActive = floorFilter !== 'all' || minRaw > 0 || minPsa10 > 0;
+  const filtersActive = safeFlipsOnly || minRaw > 0 || minPsa10 > 0;
 
   const filteredCards = useMemo(
-    () => applyFilters(allCards, floorFilter, minRaw, minPsa10),
-    [allCards, floorFilter, minRaw, minPsa10],
+    () => applyFilters(allCards, safeFlipsOnly, minRaw, minPsa10),
+    [allCards, safeFlipsOnly, minRaw, minPsa10],
   );
 
   const hotCards    = filteredCards.filter(c => c.hotnessLabel !== null).slice(0, 6);
@@ -118,7 +98,7 @@ export function DiscoveryPanel() {
             </span>
             {filtersActive && (
               <button
-                onClick={() => { setFloor('all'); setMinRawStr(''); setMinPsa10Str(''); }}
+                onClick={() => { setSafeFlips(false); setMinRawStr(''); setMinPsa10Str(''); }}
                 className="ml-auto text-[9px] font-semibold px-2 py-0.5 rounded-full transition-colors"
                 style={{
                   color: 'var(--om-accent)',
@@ -131,23 +111,31 @@ export function DiscoveryPanel() {
             )}
           </div>
 
-          {/* PSA 9 floor pills */}
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-[9px]" style={{ color: 'var(--om-text-3)' }}>PSA 9 Floor</span>
-            {FLOOR_FILTER_OPTIONS.map(opt => (
-              <button
-                key={opt.key}
-                onClick={() => setFloor(opt.key)}
-                className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold transition-all whitespace-nowrap"
-                style={{
-                  background: floorFilter === opt.key ? 'rgba(10,132,255,0.12)' : 'var(--om-bg-3)',
-                  color: floorFilter === opt.key ? 'rgb(10,132,255)' : 'var(--om-text-2)',
-                  border: floorFilter === opt.key ? '1px solid rgba(10,132,255,0.3)' : '1px solid var(--om-border-0)',
-                }}
+          {/* Safe flip toggle */}
+          <div className="flex items-center gap-2">
+            <button
+              role="switch"
+              aria-checked={safeFlipsOnly}
+              onClick={() => setSafeFlips(v => !v)}
+              className="flex items-center gap-2 text-[10px] font-semibold transition-all"
+              style={{ color: safeFlipsOnly ? 'rgb(10,132,255)' : 'var(--om-text-2)' }}
+            >
+              <span
+                className="relative inline-flex h-4 w-7 shrink-0 rounded-full transition-colors"
+                style={{ background: safeFlipsOnly ? 'rgba(10,132,255,0.8)' : 'var(--om-bg-3)', border: '1px solid var(--om-border-0)' }}
               >
-                {opt.label}
-              </button>
-            ))}
+                <span
+                  className="absolute top-0.5 h-3 w-3 rounded-full bg-white shadow transition-transform"
+                  style={{ transform: safeFlipsOnly ? 'translateX(14px)' : 'translateX(2px)' }}
+                />
+              </span>
+              Safe flips only
+            </button>
+            {safeFlipsOnly && (
+              <span className="text-[9px]" style={{ color: 'var(--om-text-3)' }}>
+                PSA 9 market covers purchase + grading cost
+              </span>
+            )}
           </div>
 
           {/* Min price inputs */}
@@ -263,7 +251,7 @@ export function DiscoveryPanel() {
           </span>
           {!isLoading && filteredCards.length > 0 && (
             <span className="text-[10px] ml-auto" style={{ color: 'var(--om-text-3)' }}>
-              {filteredCards.length} cards ranked · $25 grading cost included
+              {filteredCards.length} cards ranked
             </span>
           )}
         </div>
@@ -301,7 +289,7 @@ export function DiscoveryPanel() {
               </p>
               {filtersActive && (
                 <button
-                  onClick={() => { setFloor('all'); setMinRawStr(''); setMinPsa10Str(''); }}
+                  onClick={() => { setSafeFlips(false); setMinRawStr(''); setMinPsa10Str(''); }}
                   className="mt-2 text-[11px]"
                   style={{ color: 'var(--om-accent)' }}
                 >
