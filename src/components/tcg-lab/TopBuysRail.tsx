@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import type { ReactNode } from 'react';
 import { ExternalLink, TrendingUp, Zap } from 'lucide-react';
 import type { TopRoiCard } from '@/hooks/useTopRoi';
 import { useLiveBuyListings } from '@/hooks/useLiveBuyListings';
@@ -19,10 +20,9 @@ function deriveBadge(card: TopRoiCard): BuyBadge {
   return 'SPEC';
 }
 
-function deriveSupportLine(badge: BuyBadge, card: TopRoiCard): string | null {
+function deriveSupportLine(badge: BuyBadge): string | null {
   if (badge === 'SAFE') return 'PSA 9 supports downside';
   if (badge === 'BREAKOUT') return 'High spread';
-  if (card.psa9Spread !== null && card.psa9Spread > 0) return 'Recent comps stable';
   return null;
 }
 
@@ -45,7 +45,7 @@ function CardSkeleton() {
 
 // ── Section header ─────────────────────────────────────────────────────────────
 
-function SectionLabel({ icon, title, sub }: { icon: React.ReactNode; title: string; sub: string }) {
+function SectionLabel({ icon, title, sub }: { icon: ReactNode; title: string; sub: string }) {
   return (
     <div className="flex items-baseline gap-2 mb-2">
       <span className="shrink-0 mt-0.5">{icon}</span>
@@ -134,22 +134,26 @@ function LiveBuyCard({ result }: { result: import('@/hooks/useLiveBuyListings').
       onMouseEnter={e => ((e.currentTarget as HTMLElement).style.borderColor = 'rgba(10,132,255,0.4)')}
       onMouseLeave={e => ((e.currentTarget as HTMLElement).style.borderColor = 'var(--om-border-0)')}
     >
-      {/* Listing image */}
-      {listing.image && (
-        <div className="relative w-full overflow-hidden" style={{ height: 90, background: 'var(--om-bg-3)' }}>
+      {/* Listing image — fixed height for rail alignment */}
+      <div className="relative w-full overflow-hidden shrink-0" style={{ height: 90, background: 'var(--om-bg-3)' }}>
+        {listing.image ? (
           <img
             src={listing.image}
             alt={listing.title}
             className="w-full h-full object-cover"
             loading="lazy"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-          <span className="absolute top-2 left-2 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-black/60 text-white/90">
-            LIVE
-          </span>
-          <ExternalLink className="absolute top-2 right-2 h-3 w-3 opacity-0 group-hover:opacity-60 transition-opacity text-white" />
-        </div>
-      )}
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <span className="text-[10px] font-medium" style={{ color: 'var(--om-text-3)' }}>No image</span>
+          </div>
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+        <span className="absolute top-2 left-2 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-black/60 text-white/90">
+          LIVE
+        </span>
+        <ExternalLink className="absolute top-2 right-2 h-3 w-3 opacity-0 group-hover:opacity-60 transition-opacity text-white" />
+      </div>
 
       <div className="flex flex-col flex-1 p-3">
         <p className="text-[11px] font-semibold leading-snug line-clamp-2 mb-2" style={{ color: 'var(--om-text-0)' }}>
@@ -205,7 +209,7 @@ export function TopBuysRail({ cards, isLoading }: TopBuysRailProps) {
       .slice(0, 5)
       .map(card => {
         const badge = deriveBadge(card);
-        return { card, badge, supportLine: deriveSupportLine(badge, card) };
+        return { card, badge, supportLine: deriveSupportLine(badge) };
       });
   }, [cards]);
 

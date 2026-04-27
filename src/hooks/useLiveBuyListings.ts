@@ -34,7 +34,9 @@ export function useLiveBuyListings(topCards: TopRoiCard[], count = 3): {
             excludeLots: true,
             excludeSealed: true,
             rawOnly: true,
-            minPrice: 0,
+            // Lower bound: 25% of raw est. — prevents suspiciously cheap mismatches
+            // (damaged cards, wrong variants) from inflating computed profit
+            minPrice: Math.max(5, Math.floor(card.loose_price * 0.25)),
             maxPrice: Math.floor(card.loose_price * 1.15),
             cardType: 'single',
             buyingOptions: 'FIXED_PRICE',
