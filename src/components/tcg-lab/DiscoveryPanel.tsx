@@ -4,6 +4,7 @@ import { useTopRoi, getRoiBucket } from '@/hooks/useTopRoi';
 import type { TopRoiCard, RoiBucket } from '@/hooks/useTopRoi';
 import { RoiFeedCard } from './RoiFeedCard';
 import { HotBadge } from './HotBadge';
+import { TopBuysRail } from './TopBuysRail';
 import type { Game } from '@/types/tcg';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -64,6 +65,9 @@ export function DiscoveryPanel() {
 
   return (
     <div className="space-y-6 max-w-[900px]">
+
+      {/* ── Top Buys Right Now ──────────────────────────────────────────────── */}
+      <TopBuysRail cards={allCards} isLoading={isLoading} />
 
       {/* ── Game + filter row ───────────────────────────────────────────────── */}
       <div className="space-y-3">
