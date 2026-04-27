@@ -5,7 +5,7 @@ import {
   passesPriceFilter,
   passesNameFilter,
   computeConfidence,
-  computeOpportunityScore,
+  computeOpportunityScoreV2,
   getHotnessLabel,
   getRoiBucket as _getRoiBucket,
 } from '@/lib/tcgScoring';
@@ -25,8 +25,10 @@ export interface TopRoiCard {
   category: string;
   loose_price: number;
   graded_price: number;
+  grade9_price: number | null;
   profit: number;
   roi: number;
+  psa9Spread: number | null;  // psa9 - loose_price (raw DB spread, not listing-price spread)
   confidence: number;
   confidenceLabel: import('@/lib/tcgScoring').ConfidenceLabel;
   opportunityScore: number;
@@ -54,7 +56,7 @@ export function useTopRoi(game: Game | null, limit = 150) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let query = (supabase as any)
         .from('pricecharting_tcg_cards')
-        .select('id, product_name, normalized_name, category, loose_price, graded_price')
+        .select('id, product_name, normalized_name, category, loose_price, graded_price, grade9_price')
         .gte('loose_price', 15)       // raw floor — pre-filter at query level
         .gte('graded_price', 50)      // graded floor — pre-filter at query level
         .gt('graded_price', 0)
@@ -79,13 +81,15 @@ export function useTopRoi(game: Game | null, limit = 150) {
         .map((c: any): TopRoiCard => {
           const raw = c.loose_price as number;
           const graded = c.graded_price as number;
+          const psa9 = (c.grade9_price ?? null) as number | null;
           const name = (c.normalized_name || c.product_name || '') as string;
 
           const profit = Math.round((graded - raw) * 100) / 100;
           const roi = Math.round((profit / raw) * 10) / 10;
+          const psa9Spread = psa9 !== null ? Math.round((psa9 - raw) * 100) / 100 : null;
 
           const { score: confidence, label: confidenceLabel } = computeConfidence(raw, graded);
-          const opportunityScore = computeOpportunityScore(raw, graded, name, confidence);
+          const opportunityScore = computeOpportunityScoreV2(raw, graded, psa9, name, confidence);
           const hotnessLabel = getHotnessLabel(name, profit, roi, raw, confidenceLabel);
 
           return {
@@ -95,8 +99,10 @@ export function useTopRoi(game: Game | null, limit = 150) {
             category: c.category,
             loose_price: raw,
             graded_price: graded,
+            grade9_price: psa9,
             profit,
             roi,
+            psa9Spread,
             confidence,
             confidenceLabel,
             opportunityScore,

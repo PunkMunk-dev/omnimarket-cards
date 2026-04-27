@@ -9,7 +9,7 @@ import { usePricechartingLookup } from '@/hooks/usePricechartingLookup';
 import { useTcgGemRateSearch } from '@/hooks/useTcgGemRateSearch';
 import { HotBadge } from './HotBadge';
 import type { HotnessLabel } from '@/hooks/useTopRoi';
-import { HEAT_NAMES, THRESHOLDS } from '@/lib/tcgScoring';
+import { HEAT_NAMES, THRESHOLDS, psa9FloorLabel } from '@/lib/tcgScoring';
 
 function deriveHotness(
   title: string,
@@ -198,6 +198,13 @@ export function TerminalCard({ listing, game }: TerminalCardProps) {
                       {pricingData!.rawMarketValue != null && <>Raw est. ${pricingData!.rawMarketValue.toFixed(0)}</>}
                       {pricingData!.psa9MarketValue != null && <> · PSA 9 est. ${pricingData!.psa9MarketValue.toFixed(0)}</>}
                       {pricingData!.psa10MarketValue != null && <> · PSA 10 est. ${pricingData!.psa10MarketValue.toFixed(0)}</>}
+                    </p>
+                  )}
+
+                  {/* PSA 9 floor label — only when psa9 data present and BIN */}
+                  {!isAuction && pricingData?.psa9MarketValue != null && (
+                    <p className="text-[9px] pb-1 opacity-60" style={{ color: 'var(--om-text-3)' }}>
+                      {psa9FloorLabel(pricingData.psa9MarketValue, listingPrice)}
                     </p>
                   )}
 

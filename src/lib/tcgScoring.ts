@@ -195,6 +195,83 @@ export function computeOpportunityScore(
   );
 }
 
+// ── PSA 9 floor scoring ───────────────────────────────────────────────────────
+//
+// Measures how much safety net the PSA-9 market provides relative to purchase price.
+// When PSA9 > purchasePrice + $25 grading: positive floor; otherwise penalises.
+
+/**
+ * Returns -35 to +20 pts based on PSA 9 floor strength.
+ * A positive floor means the card can likely be graded and sold at PSA 9
+ * for a profit even if the PSA 10 market softens.
+ */
+export function computePsa9FloorScore(psa9: number, purchasePrice: number): number {
+  const floorSpread = psa9 - purchasePrice - 25; // subtract $25 grading cost
+  if (floorSpread >= 80)  return 20;
+  if (floorSpread >= 40)  return 14;
+  if (floorSpread >= 10)  return 8;
+  if (floorSpread >= 0)   return 2;
+  if (floorSpread >= -20) return -10;
+  return -35;
+}
+
+/**
+ * Human-readable floor label for the TerminalCard panel.
+ * Uses the listing price as the purchase reference (not DB raw price).
+ */
+export function psa9FloorLabel(
+  psa9: number,
+  purchasePrice: number,
+): 'Strong floor' | 'Break-even floor' | 'Weak floor' {
+  const floorSpread = psa9 - purchasePrice - 25;
+  if (floorSpread >= 10) return 'Strong floor';
+  if (floorSpread >= 0)  return 'Break-even floor';
+  return 'Weak floor';
+}
+
+/**
+ * PSA 9-aware opportunity score.
+ *
+ * WITH PSA 9 data (max ~105 pts — intentionally can exceed 100; more data = more signal):
+ *   ROI        40%
+ *   Spread     25%
+ *   PSA9 floor 20%  (−35 to +20 raw pts, normalized against 100-pt scale)
+ *   Confidence 15%
+ *   Chase      fixed pts (same as v1)
+ *
+ * WITHOUT PSA 9 data: v1 formula minus 7-pt uncertainty penalty (max ~93).
+ */
+export function computeOpportunityScoreV2(
+  raw: number,
+  graded: number,
+  psa9: number | null,
+  name: string,
+  confidenceScore: number,
+): number {
+  const profit = graded - raw;
+  const roi = (profit / raw) * 100;
+  const nameLower = name.toLowerCase();
+  const chaseBoost = computeChaseBoost(nameLower);
+
+  if (psa9 !== null) {
+    const roiPts    = computeRoiPts(roi) * (40 / THRESHOLDS.ROI_WEIGHT);       // rescale from 40→40
+    const spreadPts = computeSpreadPts(profit) * (25 / THRESHOLDS.SPREAD_WEIGHT); // 30→25
+    const confPts   = (confidenceScore / 100) * 15;                              // 20→15
+    const floorPts  = computePsa9FloorScore(psa9, raw);                          // −35 to +20
+
+    return roiPts + spreadPts + floorPts + confPts + chaseBoost;
+  }
+
+  // Without PSA 9: use v1 formula with -7 uncertainty penalty
+  return (
+    computeRoiPts(roi) +
+    computeSpreadPts(profit) +
+    (confidenceScore / 100) * THRESHOLDS.CONFIDENCE_WEIGHT +
+    chaseBoost -
+    7
+  );
+}
+
 // ── Hotness label ─────────────────────────────────────────────────────────────
 //
 // Only fires for Medium+ confidence to avoid surfacing low-data noise.
