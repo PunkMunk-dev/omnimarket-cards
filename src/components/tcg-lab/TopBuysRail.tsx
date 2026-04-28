@@ -104,8 +104,8 @@ function LiveBuyCard({ result }: { result: LiveBuyResult }) {
       onMouseEnter={e => ((e.currentTarget as HTMLElement).style.borderColor = 'rgba(10,132,255,0.40)')}
       onMouseLeave={e => ((e.currentTarget as HTMLElement).style.borderColor = 'var(--om-border-0)')}
     >
-      {/* Image — fixed 90px height for consistent rail alignment */}
-      <div className="relative w-full shrink-0 overflow-hidden" style={{ height: 90, background: 'var(--om-bg-3)' }}>
+      {/* Image — live eBay listing image, always present (hook filters no-image results) */}
+      <div className="relative w-full shrink-0 overflow-hidden" style={{ height: 110, background: 'var(--om-bg-3)' }}>
         {listing.image ? (
           <img src={listing.image} alt={listing.title} className="w-full h-full object-cover" loading="lazy" />
         ) : (

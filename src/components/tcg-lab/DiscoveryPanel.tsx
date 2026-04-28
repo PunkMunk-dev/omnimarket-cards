@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { TrendingUp, DollarSign, Shield, Zap, Flame, SlidersHorizontal } from 'lucide-react';
+import { TrendingUp, DollarSign, Shield, Zap, SlidersHorizontal } from 'lucide-react';
 import { useTopRoi, getRoiBucket } from '@/hooks/useTopRoi';
 import type { TopRoiCard, RoiBucket } from '@/hooks/useTopRoi';
 import { RoiFeedCard } from './RoiFeedCard';
@@ -192,17 +192,17 @@ export function DiscoveryPanel({ onFindListings }: DiscoveryPanelProps) {
         </div>
       </div>
 
-      {/* ── Hot Right Now ───────────────────────────────────────────────────── */}
+      {/* ── Strong Market Signals ───────────────────────────────────────────── */}
       {(isLoading || hotCards.length > 0) && (
         <section>
           <div className="flex items-center gap-2 mb-1">
-            <Flame className="h-3.5 w-3.5" style={{ color: 'rgb(255,130,70)' }} />
+            <TrendingUp className="h-3.5 w-3.5" style={{ color: 'rgb(255,130,70)' }} />
             <span className="text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: 'var(--om-text-2)' }}>
-              Hot Right Now
+              Strong Market Signals
             </span>
           </div>
           <p className="text-[10px] mb-3" style={{ color: 'var(--om-text-3)' }}>
-            Based on price spread, ROI, and chase-card keywords — not live market movement.
+            Estimated opportunities from PriceCharting data — not confirmed active listings. Use Find Live Listings to verify.
           </p>
 
           {isLoading ? (

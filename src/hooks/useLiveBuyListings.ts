@@ -1,7 +1,27 @@
 import { useQueries } from '@tanstack/react-query';
 import { searchActiveListings } from '@/services/tcgEbayService';
+import { computeImageQualityScore } from '@/lib/tcgFilters';
 import type { TopRoiCard } from './useTopRoi';
 import type { EbayListing } from '@/types/tcg';
+
+// Extra junk terms not covered by the service-layer filters (proxy, custom, digital, etc.)
+// These slip through the LOT/SEALED/GRADED blocklists but are not purchasable singles.
+const LIVE_BUY_EXTRA_EXCLUDE = [
+  'proxy', 'custom', 'fanmade', 'fan made', 'replica',
+  'digital', 'code', 'online',
+  'playmat', 'sleeves', 'deck box', 'deckbox', 'toploader', 'binder',
+  'choose your', 'choose your card', 'you choose', 'pick your',
+  'sealed', 'booster', 'pack opening',
+  'damaged', 'heavy play', 'poor condition',
+];
+
+function isCleanLiveBuyListing(listing: EbayListing): boolean {
+  const t = listing.title.toLowerCase();
+  if (LIVE_BUY_EXTRA_EXCLUDE.some(term => t.includes(term))) return false;
+  if (!listing.itemWebUrl) return false;
+  if (computeImageQualityScore(listing) <= 0) return false;
+  return true;
+}
 
 // ── Match validation helpers ──────────────────────────────────────────────────
 
@@ -76,13 +96,15 @@ export interface LiveBuyResult {
  * For each of the top N cards (by opportunityScore), searches eBay for active
  * BIN raw listings priced at or below the PriceCharting raw benchmark (+ 15%
  * buffer). Returns only results where the cheapest listing still yields a
- * positive profit after grading cost.
+ * positive profit after grading cost, has a valid image and URL, and passes
+ * junk-listing checks.
  */
 export function useLiveBuyListings(topCards: TopRoiCard[], count = 3): {
   results: LiveBuyResult[];
   isLoading: boolean;
 } {
-  const cards = topCards.slice(0, count);
+  // Cards without a PSA10 estimate cannot produce a profit figure — skip them.
+  const cards = topCards.filter(c => c.graded_price > 0).slice(0, count);
 
   const queries = useQueries({
     queries: cards.map(card => ({
@@ -102,7 +124,7 @@ export function useLiveBuyListings(topCards: TopRoiCard[], count = 3): {
             cardType: 'single',
             buyingOptions: 'FIXED_PRICE',
           },
-          10,
+          15,
           0,
         );
         return result.listings;
@@ -118,13 +140,21 @@ export function useLiveBuyListings(topCards: TopRoiCard[], count = 3): {
   queries.forEach((query, i) => {
     if (!query.data || query.data.length === 0) return;
     const card = cards[i];
-    const listing = query.data.find(l => listingMatchesCard(l, card));
-    if (!listing) return;
-    const listingPrice = parseFloat(listing.price.value);
-    if (isNaN(listingPrice) || listingPrice <= 0) return;
-    const actualProfit = Math.round((card.graded_price - listingPrice - 25) * 100) / 100;
-    if (actualProfit <= 0) return;
-    results.push({ card, listing, listingPrice, actualProfit });
+
+    // Find the best listing: must match the card, pass junk/image/URL checks,
+    // and produce positive profit. Prefer higher image quality among matches.
+    const candidates = query.data
+      .filter(l => listingMatchesCard(l, card) && isCleanLiveBuyListing(l))
+      .sort((a, b) => computeImageQualityScore(b) - computeImageQualityScore(a));
+
+    for (const listing of candidates) {
+      const listingPrice = parseFloat(listing.price.value);
+      if (isNaN(listingPrice) || listingPrice <= 0) continue;
+      const actualProfit = Math.round((card.graded_price - listingPrice - 25) * 100) / 100;
+      if (actualProfit <= 0) continue;
+      results.push({ card, listing, listingPrice, actualProfit });
+      break; // take only the best match per card
+    }
   });
 
   return { results, isLoading };

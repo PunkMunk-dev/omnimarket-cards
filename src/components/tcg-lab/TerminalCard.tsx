@@ -137,7 +137,13 @@ export function TerminalCard({ listing, game }: TerminalCardProps) {
     <div ref={mergedRef} className="om-card overflow-hidden">
       <a href={listing.itemWebUrl} target="_blank" rel="noopener noreferrer" className="block h-full">
         <div className="aspect-square overflow-hidden relative" style={{ background: 'var(--om-bg-3)' }}>
-          <img src={listing.image} alt={cleanTitle} className="w-full h-full object-cover transition-transform duration-200 hover:scale-[1.02]" loading="lazy" />
+          {listing.image ? (
+            <img src={listing.image} alt={cleanTitle} className="w-full h-full object-cover transition-transform duration-200 hover:scale-[1.02]" loading="lazy" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <span className="text-[10px]" style={{ color: 'var(--om-text-3)' }}>No image</span>
+            </div>
+          )}
           <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-black/90 via-black/50 to-transparent" />
           <div className="absolute top-2.5 left-2.5 flex flex-col items-start gap-1">
             <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold text-white/90 bg-black/50 backdrop-blur-sm">eBay</span>
