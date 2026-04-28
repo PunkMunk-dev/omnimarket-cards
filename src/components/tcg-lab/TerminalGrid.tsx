@@ -14,10 +14,11 @@ interface TerminalGridProps {
   isLoadingMore?: boolean;
   onLoadMore?: () => void;
   game?: Game;
+  bestCandidateId?: string | null;
 }
 
 export const TerminalGrid = React.forwardRef<HTMLDivElement, TerminalGridProps>(
-  ({ listings, isLoading, error, hasMore, isLoadingMore, onLoadMore, game }, ref) => {
+  ({ listings, isLoading, error, hasMore, isLoadingMore, onLoadMore, game, bestCandidateId }, ref) => {
     if (isLoading) return <ResultsSkeletonGrid />;
 
     if (error) {
@@ -44,7 +45,7 @@ export const TerminalGrid = React.forwardRef<HTMLDivElement, TerminalGridProps>(
       <div ref={ref}>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           {listings.map((listing) => (
-            <TerminalCard key={listing.itemId} listing={listing} game={game} />
+            <TerminalCard key={listing.itemId} listing={listing} game={game} isBestCandidate={listing.itemId === bestCandidateId} />
           ))}
         </div>
 

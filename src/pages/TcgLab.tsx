@@ -17,17 +17,35 @@ export default function TcgLab() {
   const [mode, setMode] = useState<'guided' | 'quick'>('guided');
   const [quickQuery, setQuickQuery] = useState('');
 
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { data: sets = [] } = useSets(selectedGame);
+  const urlQ = searchParams.get('q')?.trim() ?? '';
 
   // Allow global header search (and direct links) to pre-populate quick query
   useEffect(() => {
-    const urlQ = searchParams.get('q');
     if (urlQ) {
       setMode('quick');
-      setQuickQuery(urlQ);
+      setQuickQuery((current) => current === urlQ ? current : urlQ);
     }
-  }, [searchParams]);
+  }, [urlQ]);
+
+  useEffect(() => {
+    const trimmedQuery = quickQuery.trim();
+    const currentQuery = searchParams.get('q')?.trim() ?? '';
+
+    if (mode === 'quick' && trimmedQuery) {
+      if (trimmedQuery === currentQuery) return;
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.set('q', trimmedQuery);
+      setSearchParams(nextParams, { replace: true });
+      return;
+    }
+
+    if (!currentQuery) return;
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete('q');
+    setSearchParams(nextParams, { replace: true });
+  }, [mode, quickQuery, searchParams, setSearchParams]);
 
   const handleGameChange = (game: Game) => {
     setSelectedGame(game);

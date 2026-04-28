@@ -9,16 +9,23 @@ import { usePricechartingLookup } from '@/hooks/usePricechartingLookup';
 import { useTcgGemRateSearch } from '@/hooks/useTcgGemRateSearch';
 import { HotBadge } from './HotBadge';
 import type { HotnessLabel } from '@/hooks/useTopRoi';
-import { HEAT_NAMES, THRESHOLDS, isSafeFlip } from '@/lib/tcgScoring';
+import { ESTIMATED_GRADING_COST, HEAT_NAMES, THRESHOLDS, isSafeFlip } from '@/lib/tcgScoring';
+import type { ProcessedListing } from '@/types/tcgFilters';
 
-/** Lightweight listing quality indicator — helps user compare which listing is worth inspecting */
-function deriveListingQuality(title: string): 'Clean title match' | 'Raw single' | null {
+const CARD_NUMBER_RE = /\b\d{1,3}\/\d{1,3}\b|\bOP\d{2}-\d{3}\b|\b[A-Z]{1,3}\d{2,3}[-/]\d{2,3}\b/i;
+const CONDITION_CHECK_RE = /\b(see photos|see picture|see description|read description|as is|played|hp|crease|damaged|whitening|wear)\b/i;
+const VERIFY_DETAILS_RE = /\b(psa|bgs|sgc|cgc|graded|slab|lot|bundle|sealed|proxy|custom)\b/i;
+
+function toFiniteNumber(value: number | null | undefined): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+function deriveListingMeta(listing: EbayListing): 'Clean title match' | 'Raw single' | 'Needs condition check' | 'Verify details' {
+  const title = listing.title.trim();
   const t = title.toLowerCase();
-  // Skip slabs, lots, or anything that shouldn't pass filters but might slip through
-  if (/psa|bgs|sgc|cgc|graded|slab/.test(t)) return null;
-  if (/lot|bundle|bulk/.test(t)) return null;
-  // Card number present → title is specific, better for matching
-  if (/\b\d+\/\d+\b/.test(title)) return 'Clean title match';
+  if (CARD_NUMBER_RE.test(title)) return 'Clean title match';
+  if (CONDITION_CHECK_RE.test(t)) return 'Needs condition check';
+  if (VERIFY_DETAILS_RE.test(t) || !listing.image) return 'Verify details';
   return 'Raw single';
 }
 
@@ -49,11 +56,12 @@ const GEM_CONF_COLOR = {
 
 
 interface TerminalCardProps {
-  listing: EbayListing;
+  listing: EbayListing | ProcessedListing;
   game?: Game;
+  isBestCandidate?: boolean;
 }
 
-export function TerminalCard({ listing, game }: TerminalCardProps) {
+export function TerminalCard({ listing, game, isBestCandidate = false }: TerminalCardProps) {
   const { isInWatchlist, toggleWatchlist } = useSharedWatchlist();
   const watched = isInWatchlist(listing.itemId);
   const [copied, setCopied] = useState(false);
@@ -98,18 +106,27 @@ export function TerminalCard({ listing, game }: TerminalCardProps) {
   };
 
   const isAuction = listing.listingType === 'AUCTION';
-  const listingPrice = parseFloat(listing.price.value);
+  const listingPrice = toFiniteNumber(Number.parseFloat(listing.price.value));
+  const shippingCost = toFiniteNumber(Number.parseFloat(listing.shipping?.cost ?? ''));
+  const rawEstimate = toFiniteNumber(pricingData?.rawMarketValue);
+  const psa9Estimate = toFiniteNumber(pricingData?.psa9MarketValue);
+  const psa10Estimate = toFiniteNumber(pricingData?.psa10MarketValue);
+  const estimateSummary = [
+    psa10Estimate !== null ? `PSA 10 est. $${psa10Estimate.toFixed(0)}` : null,
+    psa9Estimate !== null ? `PSA 9 est. $${psa9Estimate.toFixed(0)}` : null,
+    rawEstimate !== null ? `Raw est. $${rawEstimate.toFixed(0)}` : null,
+  ].filter((value): value is string => value !== null);
 
   // actualProfit = PSA10 market avg − eBay listing price − $25 grading cost
   // Uses the real listing price (what the user pays), making this an honest estimate.
   const actualProfit =
-    pricingData?.psa10MarketValue != null && !isAuction && !isNaN(listingPrice)
-      ? Math.round((pricingData.psa10MarketValue - listingPrice - 25) * 100) / 100
+    psa10Estimate !== null && !isAuction && listingPrice !== null
+      ? Math.round((psa10Estimate - listingPrice - ESTIMATED_GRADING_COST) * 100) / 100
       : null;
 
   // ROI retained for hotness labeling only — not displayed
   const actualRoi =
-    actualProfit !== null && listingPrice > 0
+    actualProfit !== null && listingPrice !== null && listingPrice > 0
       ? Math.round((actualProfit / listingPrice) * 100)
       : null;
 
@@ -118,20 +135,22 @@ export function TerminalCard({ listing, game }: TerminalCardProps) {
   const spreadColor = profitPositive ? 'rgb(0,200,100)' : 'rgb(255,80,80)';
 
   // Safe floor: PSA9 market covers the eBay listing price + $25 grading cost
-  const hasSafeFloor = !isAuction && isSafeFlip(pricingData?.psa9MarketValue ?? null, listingPrice);
+  const hasSafeFloor = !isAuction && listingPrice !== null && psa9Estimate !== null && isSafeFlip(psa9Estimate, listingPrice);
 
   // Panel visibility: PriceCharting and GemRate are independent
   const hasPricingContent = pricingData !== null &&
-    (pricingData.rawMarketValue != null || pricingData.psa10MarketValue != null);
+    (rawEstimate !== null || psa9Estimate !== null || psa10Estimate !== null);
   const gemHasData = !gemLoading && totalGrades !== null && gemConfidence !== null;
   const showGemSection = gemLoading || gemHasData;
   // Content above the GemRate separator (determines whether separator renders)
-  const hasTopContent = (!isAuction && showProfit) || hasPricingContent;
+  const listingMeta = deriveListingMeta(listing);
+  const hasTopContent = (!isAuction && showProfit) || hasPricingContent || !!listingMeta;
   // Every listing type shows the market panel (with appropriate fallback text when enrichment is missing)
   const showPanel = true;
 
-  const hotnessLabel = deriveHotness(listing.title, actualProfit, actualRoi, listingPrice);
-  const listingQuality = deriveListingQuality(listing.title);
+  const hotnessLabel = listingPrice !== null
+    ? deriveHotness(listing.title, actualProfit, actualRoi, listingPrice)
+    : null;
 
   return (
     <div ref={mergedRef} className="om-card overflow-hidden">
@@ -147,6 +166,18 @@ export function TerminalCard({ listing, game }: TerminalCardProps) {
           <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-black/90 via-black/50 to-transparent" />
           <div className="absolute top-2.5 left-2.5 flex flex-col items-start gap-1">
             <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold text-white/90 bg-black/50 backdrop-blur-sm">eBay</span>
+            {isBestCandidate && (
+              <span
+                className="px-2 py-0.5 rounded-full text-[11px] font-semibold backdrop-blur-sm"
+                style={{
+                  background: 'rgba(10,132,255,0.20)',
+                  border: '1px solid rgba(10,132,255,0.30)',
+                  color: 'rgb(160,210,255)',
+                }}
+              >
+                Best candidate
+              </span>
+            )}
             {hotnessLabel && !isPricingLoading && <HotBadge label={hotnessLabel} size="xs" />}
           </div>
           <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5">
@@ -169,7 +200,7 @@ export function TerminalCard({ listing, game }: TerminalCardProps) {
                 ) : (
                   <span className="text-lg font-bold text-white tabular-nums">${listing.price.value}</span>
                 )}
-                {listing.shipping && parseFloat(listing.shipping.cost) > 0 && (
+                {shippingCost !== null && shippingCost > 0 && (
                   <span className="text-[11px] text-white/50">+${listing.shipping.cost} ship</span>
                 )}
               </div>
@@ -213,9 +244,7 @@ export function TerminalCard({ listing, game }: TerminalCardProps) {
                   {/* ── SECONDARY: price anchors ── */}
                   {hasPricingContent && (
                     <p className="text-[10px] tabular-nums pb-1" style={{ color: 'var(--om-text-3)' }}>
-                      {pricingData!.psa10MarketValue != null && <>PSA 10 est. ${pricingData!.psa10MarketValue.toFixed(0)}</>}
-                      {pricingData!.psa9MarketValue != null && <> · PSA 9 est. ${pricingData!.psa9MarketValue.toFixed(0)}</>}
-                      {pricingData!.rawMarketValue != null && <> · Raw est. ${pricingData!.rawMarketValue.toFixed(0)}</>}
+                      {estimateSummary.join(' · ')}
                     </p>
                   )}
 
@@ -227,9 +256,9 @@ export function TerminalCard({ listing, game }: TerminalCardProps) {
                   )}
 
                   {/* ── Listing quality indicator ── */}
-                  {listingQuality && (
+                  {listingMeta && (
                     <p className="text-[9px] pb-1" style={{ color: 'var(--om-text-3)' }}>
-                      {listingQuality === 'Clean title match' ? '✓ ' : ''}{listingQuality} · needs manual condition check
+                      {listingMeta}
                     </p>
                   )}
 
@@ -251,9 +280,6 @@ export function TerminalCard({ listing, game }: TerminalCardProps) {
                   )}
 
                   {/* ── Fallbacks ── */}
-                  {!isAuction && !hasTopContent && !showGemSection && (
-                    <p className="text-[10px] py-0.5" style={{ color: 'var(--om-text-3)' }}>No verified match</p>
-                  )}
                   {isAuction && !hasTopContent && !showGemSection && (
                     <p className="text-[10px] py-0.5" style={{ color: 'var(--om-text-3)' }}>No market data</p>
                   )}

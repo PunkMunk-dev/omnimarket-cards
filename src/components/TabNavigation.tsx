@@ -27,7 +27,7 @@ export function TabNavigation() {
     e.preventDefault();
     const q = headerQuery.trim();
     if (!q) return;
-    navigate(`/?q=${encodeURIComponent(q)}`);
+    navigate(`/tcg?q=${encodeURIComponent(q)}`);
     setHeaderQuery('');
   };
 
@@ -142,7 +142,7 @@ export function TabNavigation() {
             {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </button>
           <WatchlistDropdown onSearchItem={(query) => {
-            navigate(`/?q=${encodeURIComponent(query)}&src=wl`);
+            navigate(`/tcg?q=${encodeURIComponent(query)}`);
           }} />
         </div>
       </div>

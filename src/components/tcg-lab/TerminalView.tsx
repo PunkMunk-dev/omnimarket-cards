@@ -1,12 +1,58 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { Search, X } from 'lucide-react';
 import { TerminalGrid } from './TerminalGrid';
 import { ResultsToolbar, PRICE_RANGES, type PriceRange, type ListingTypeFilter } from './ResultsToolbar';
 import { searchActiveListings } from '@/services/tcgEbayService';
 import { filterTcgListings, dedupeTcgListings, titleQualityScore } from '@/lib/tcgFilters';
 import type { TcgTarget, TcgSet, Game, SearchFilters } from '@/types/tcg';
-import { Input } from '@/components/ui/input';
+import type { ProcessedListing } from '@/types/tcgFilters';
+
+const BEST_CANDIDATE_EXCLUDE_RE = /\b(psa|bgs|sgc|cgc|graded|slab|proxy|custom|sealed|booster|box|tin|lot|bundle|bulk|repack)\b/i;
+
+function pickBestCandidateId(listings: ProcessedListing[]): string | null {
+  const eligible = listings
+    .map((listing) => ({
+      listing,
+      price: Number.parseFloat(listing.price.value),
+      titleMatch: titleQualityScore(listing) > 0,
+    }))
+    .filter(({ listing, price }) => (
+      Number.isFinite(price) &&
+      price > 0 &&
+      listing.listingType === 'FIXED_PRICE' &&
+      listing.imageQualityScore >= 0.7 &&
+      !!listing.image &&
+      !BEST_CANDIDATE_EXCLUDE_RE.test(listing.title)
+    ));
+
+  if (eligible.length === 0) return null;
+
+  const lowestPrice = Math.min(...eligible.map(({ price }) => price));
+  const priceWindow = Math.max(lowestPrice * 1.15, lowestPrice + 15);
+  const shortlist = eligible.filter(({ price }) => price <= priceWindow);
+
+  if (shortlist.length === 0) return null;
+
+  const ranked = shortlist
+    .map(({ listing, price, titleMatch }) => ({
+      listing,
+      price,
+      titleMatch,
+      score:
+        (titleMatch ? 4 : 0) +
+        (listing.cardNumber ? 1 : 0) +
+        listing.imageQualityScore * 2 +
+        Math.min(listing.watchCount ?? 0, 10) * 0.05 -
+        ((price - lowestPrice) / Math.max(lowestPrice, 1)) * 2,
+    }))
+    .sort((a, b) => b.score - a.score || a.price - b.price);
+
+  const best = ranked[0];
+  if (!best) return null;
+  if (!best.titleMatch && best.listing.imageQualityScore < 0.9) return null;
+  if (best.score < 4.5) return null;
+  return best.listing.itemId;
+}
 
 interface TerminalViewProps {
   target?: TcgTarget;
@@ -20,22 +66,14 @@ interface TerminalViewProps {
 
 export function TerminalView({ target, game, freeQuery, selectedSetId, sets, onTotalCountChange, onLoadingChange }: TerminalViewProps) {
   const [sort, setSort] = useState<SearchFilters['sort']>('best_match');
-  const [searchTerm, setSearchTerm] = useState<string>('');
-  const [debouncedSearch, setDebouncedSearch] = useState<string>('');
   const [listingType, setListingType] = useState<ListingTypeFilter>('all');
   const [priceRange, setPriceRange] = useState<PriceRange>('all');
-
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(searchTerm), 300);
-    return () => clearTimeout(timer);
-  }, [searchTerm]);
 
   const priceRangeConfig = PRICE_RANGES.find(r => r.value === priceRange) ?? PRICE_RANGES[0];
 
   const buildSearchQuery = (): string => {
     if (freeQuery) return freeQuery;
     const parts = [target!.name];
-    if (debouncedSearch.trim()) parts.push(debouncedSearch.trim());
     if (selectedSetId) {
       const set = sets.find(s => s.id === selectedSetId);
       if (set) parts.push(set.set_name);
@@ -99,35 +137,22 @@ export function TerminalView({ target, game, freeQuery, selectedSetId, sets, onT
     return { listings: final, removedCount, dupsRemoved: result.duplicatesRemoved };
   }, [allListings, game, sort, isAuctionMode]);
 
-  const displayTitle = freeQuery ?? target?.name ?? activeQuery;
+  const bestCandidateId = useMemo(
+    () => processedResults?.listings ? pickBestCandidateId(processedResults.listings) : null,
+    [processedResults?.listings],
+  );
+
+  const displayTitle = activeQuery;
 
   return (
     <div className="space-y-4">
-      {/* Header: Live listings for [query] */}
       <div>
         <h2 className="text-[15px] font-semibold" style={{ color: 'var(--om-text-0)' }}>
           Live listings for <span style={{ color: 'var(--om-accent)' }}>{displayTitle}</span>
         </h2>
         <p className="text-[11px] mt-0.5" style={{ color: 'var(--om-text-3)' }}>
-          Compare active eBay listings against raw, PSA 9, and PSA 10 estimates.
+          Find the best card to grade PSA 10.
         </p>
-      </div>
-
-      <div className="relative w-full sm:max-w-xs">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5" style={{ color: 'var(--om-text-3)' }} />
-        <Input
-          type="text"
-          placeholder="Search variants, numbers..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          maxLength={50}
-          className="h-8 pl-9 pr-8 text-xs om-input rounded-lg font-mono"
-        />
-        {searchTerm && (
-          <button onClick={() => setSearchTerm('')} className="absolute right-2 top-1/2 -translate-y-1/2 transition-colors" style={{ color: 'var(--om-text-2)' }}>
-            <X className="h-3.5 w-3.5" />
-          </button>
-        )}
       </div>
 
       <ResultsToolbar
@@ -153,6 +178,7 @@ export function TerminalView({ target, game, freeQuery, selectedSetId, sets, onT
         isLoadingMore={isFetchingNextPage}
         onLoadMore={() => fetchNextPage()}
         game={game}
+        bestCandidateId={bestCandidateId}
       />
     </div>
   );

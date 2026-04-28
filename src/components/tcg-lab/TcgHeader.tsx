@@ -57,6 +57,7 @@ export function TcgHeader({
   const chaseName = selectedGame === 'one_piece' ? 'Bounty' : 'Chase';
   const selectedSet = sets.find(s => s.id === selectedSetId);
   const hasActiveQuery = (mode === 'guided' && !!selectedTarget && !!selectedGame) || (mode === 'quick' && quickQuery.trim().length > 0);
+  const showGuidedSummary = mode === 'guided' && hasActiveQuery;
 
   const summaryPlayerName = mode === 'quick' ? (quickQuery.trim() || undefined) : selectedTarget?.name;
   const summaryBrandLabel = mode === 'guided' && selectedGame !== 'one_piece' ? (selectedSet?.set_name || undefined) : undefined;
@@ -91,7 +92,7 @@ export function TcgHeader({
               )}
             </div>
             <div className="flex items-center gap-2">
-              {hasActiveQuery && (
+              {showGuidedSummary && (
                 <span className="om-pill om-pill-active tabular-nums text-[10px]">{totalCount}</span>
               )}
               {mode === 'guided' && (
@@ -110,7 +111,7 @@ export function TcgHeader({
             </div>
           </div>
         </div>
-        {hasActiveQuery && (
+        {showGuidedSummary && (
           <div className="mx-2">
             <QuerySummaryBar
               playerName={summaryPlayerName}
@@ -137,7 +138,7 @@ export function TcgHeader({
                 <p className="text-[11px]" style={{ color: 'var(--om-text-3)' }}>Pokémon + One Piece live listings</p>
               </div>
               <SearchModeToggle mode={mode} onModeChange={onModeChange} />
-              {hasActiveQuery && (
+              {showGuidedSummary && (
                 <span className="om-pill om-pill-active tabular-nums">{totalCount} cards</span>
               )}
             </div>
@@ -151,7 +152,7 @@ export function TcgHeader({
           </div>
         </div>
       </div>
-      {hasActiveQuery && (
+      {showGuidedSummary && (
         <div className="max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8">
           <QuerySummaryBar
             playerName={summaryPlayerName}

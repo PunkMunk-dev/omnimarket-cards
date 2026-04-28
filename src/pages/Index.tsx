@@ -1,7 +1,7 @@
-import { useState, useCallback, useEffect, useRef } from "react";
-import { useSearchParams, Link } from "react-router-dom";
+import { useState, useCallback, useRef } from "react";
+import { useSearchParams, Link, Navigate } from "react-router-dom";
 import { toast } from "sonner";
-import { Loader2, ArrowRight, ChevronRight, Star, X } from "lucide-react";
+import { Loader2, ArrowRight, Star, X } from "lucide-react";
 import heroBg from "@/assets/hero-bg.jpg";
 import { Button } from "@/components/ui/button";
 import { SearchFilters } from "@/components/SearchFilters";
@@ -33,35 +33,22 @@ function pushRecentSearch(term: string) {
 }
 
 export default function Index() {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const urlQuery = searchParams.get('q') || '';
   const urlSrc = searchParams.get('src') || '';
-  const [query, setQuery] = useState(urlQuery);
+  const [query, setQuery] = useState('');
   const [items, setItems] = useState<EbayItem[]>([]);
   const [total, setTotal] = useState(0);
   const [nextPage, setNextPage] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [hasSearched, setHasSearched] = useState(!!urlQuery);
+  const [hasSearched, setHasSearched] = useState(false);
   const [sort, setSort] = useState<SortOption>("best");
   const [error, setError] = useState<string | null>(null);
-  const [fromWatchlist, setFromWatchlist] = useState(urlSrc === 'wl');
+  const [fromWatchlist, setFromWatchlist] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
-  const lastSearchedRef = useRef<string>('');
 
-  // Search when URL query changes (handles both mount and header-nav)
-  useEffect(() => {
-    if (urlQuery && urlQuery !== lastSearchedRef.current) {
-      lastSearchedRef.current = urlQuery;
-      setQuery(urlQuery);
-      setError(null);
-      setFromWatchlist(urlSrc === 'wl');
-      performSearch(urlQuery, 1, false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [urlQuery, urlSrc]);
-
-  const { watchlist, isInWatchlist, toggleWatchlist } = useSharedWatchlist();
+  const { isInWatchlist, toggleWatchlist } = useSharedWatchlist();
 
   const performSearch = useCallback(async (
     searchQuery: string, 
@@ -71,6 +58,7 @@ export default function Index() {
   ) => {
     if (!searchQuery.trim()) return;
 
+    setQuery(searchQuery);
     pushRecentSearch(searchQuery);
 
     // Abort previous in-flight request
@@ -153,15 +141,14 @@ export default function Index() {
 
   const marketTilesRef = useRef<HTMLDivElement>(null);
 
-  const handleStartSearching = () => {
-    const input = document.querySelector<HTMLInputElement>('header input[type="text"], header input[type="search"]');
-    if (input) {
-      input.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      setTimeout(() => input.focus(), 400);
-    }
-  };
-
   const handleExploreMarkets = () => marketTilesRef.current?.scrollIntoView({ behavior: 'smooth' });
+
+  if (urlQuery) {
+    const nextParams = new URLSearchParams();
+    nextParams.set('q', urlQuery);
+    if (urlSrc) nextParams.set('src', urlSrc);
+    return <Navigate to={`/tcg?${nextParams.toString()}`} replace />;
+  }
 
   return (
     <div className="min-h-[calc(100vh-48px)] bg-background pb-16 sm:pb-0">
@@ -306,8 +293,8 @@ export default function Index() {
                     >
                       Find Opportunities <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
                     </button>
-                    <button
-                      onClick={handleStartSearching}
+                    <Link
+                      to="/tcg"
                       className="inline-flex items-center justify-center rounded-xl h-11 px-7 text-sm font-semibold hover:-translate-y-px active:scale-[0.98] transition-all duration-200"
                       style={{
                         background: 'rgba(255,255,255,0.10)',
@@ -317,7 +304,7 @@ export default function Index() {
                       }}
                     >
                       View Live Market
-                    </button>
+                    </Link>
                   </div>
 
                   <p className="mt-4 text-[12px]" style={{ color: 'rgba(255,255,255,0.35)' }}>
