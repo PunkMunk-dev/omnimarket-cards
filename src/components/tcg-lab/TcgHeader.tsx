@@ -87,7 +87,7 @@ export function TcgHeader({
                 <SearchModeToggle mode={mode} onModeChange={onModeChange} className="scale-90 origin-left" />
               </div>
               {mode === 'quick' && (
-                <QuickSearchInput value={quickQuery} onChange={onQuickQueryChange} placeholder="Search any card or set…" className="mt-2" />
+                <QuickSearchInput value={quickQuery} onChange={onQuickQueryChange} placeholder="Search a card to compare live eBay listings…" className="mt-2" />
               )}
             </div>
             <div className="flex items-center gap-2">
@@ -110,16 +110,18 @@ export function TcgHeader({
             </div>
           </div>
         </div>
-        <div className="mx-2">
-          <QuerySummaryBar
-            playerName={hasActiveQuery ? summaryPlayerName : undefined}
-            brandLabel={summaryBrandLabel} showAllBrands={summaryShowAllBrands}
-            traitLabels={summaryTraitLabels}
-            resultCount={hasActiveQuery ? totalCount : undefined}
-            isLoading={hasActiveQuery ? isSearchLoading : false}
-            idleMessage={summaryIdleMessage}
-          />
-        </div>
+        {hasActiveQuery && (
+          <div className="mx-2">
+            <QuerySummaryBar
+              playerName={summaryPlayerName}
+              brandLabel={summaryBrandLabel} showAllBrands={summaryShowAllBrands}
+              traitLabels={summaryTraitLabels}
+              resultCount={totalCount}
+              isLoading={isSearchLoading}
+              idleMessage={summaryIdleMessage}
+            />
+          </div>
+        )}
       </div>
     );
   }
@@ -141,7 +143,7 @@ export function TcgHeader({
             </div>
             <div className="flex items-center gap-2.5 flex-1 min-w-0 justify-end flex-wrap">
               {mode === 'quick' ? (
-                <QuickSearchInput value={quickQuery} onChange={onQuickQueryChange} placeholder="Search any card or set…" className="max-w-lg" />
+                <QuickSearchInput value={quickQuery} onChange={onQuickQueryChange} placeholder="Search a card to compare live eBay listings…" className="max-w-lg" />
               ) : (
                 guidedFilters
               )}
@@ -149,16 +151,18 @@ export function TcgHeader({
           </div>
         </div>
       </div>
-      <div className="max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8">
-        <QuerySummaryBar
-          playerName={hasActiveQuery ? summaryPlayerName : undefined}
-          brandLabel={summaryBrandLabel} showAllBrands={summaryShowAllBrands}
-          traitLabels={summaryTraitLabels}
-          resultCount={hasActiveQuery ? totalCount : undefined}
-          isLoading={hasActiveQuery ? isSearchLoading : false}
-          idleMessage={summaryIdleMessage}
-        />
-      </div>
+      {hasActiveQuery && (
+        <div className="max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8">
+          <QuerySummaryBar
+            playerName={summaryPlayerName}
+            brandLabel={summaryBrandLabel} showAllBrands={summaryShowAllBrands}
+            traitLabels={summaryTraitLabels}
+            resultCount={totalCount}
+            isLoading={isSearchLoading}
+            idleMessage={summaryIdleMessage}
+          />
+        </div>
+      )}
     </div>
   );
 }

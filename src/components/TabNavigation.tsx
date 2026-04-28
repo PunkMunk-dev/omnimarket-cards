@@ -27,11 +27,7 @@ export function TabNavigation() {
     e.preventDefault();
     const q = headerQuery.trim();
     if (!q) return;
-    if (isOnTcg) {
-      navigate(`/tcg?q=${encodeURIComponent(q)}`);
-    } else {
-      navigate(`/?q=${encodeURIComponent(q)}`);
-    }
+    navigate(`/?q=${encodeURIComponent(q)}`);
     setHeaderQuery('');
   };
 
@@ -122,18 +118,21 @@ export function TabNavigation() {
           <nav className="flex items-center gap-1">{navItems}</nav>
         </div>
         <div className="ml-auto flex items-center gap-3">
-          <form onSubmit={handleHeaderSearch} className="w-[260px] md:w-[340px] lg:w-[420px]">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none" style={{ color: 'var(--om-text-3)' }} />
-              <input
-                type="text"
-                value={headerQuery}
-                onChange={(e) => setHeaderQuery(e.target.value)}
-                placeholder={isOnTcg ? 'Search live card listings…' : 'Search any card, set, or player...'}
-                className="flex h-10 md:h-11 w-full rounded-xl pl-10 pr-3 text-sm transition-all om-input"
-              />
-            </div>
-          </form>
+          {/* Global search — hidden on /tcg because TCG has its own dedicated search bar */}
+          {!isOnTcg && (
+            <form onSubmit={handleHeaderSearch} className="w-[260px] md:w-[340px] lg:w-[420px]">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none" style={{ color: 'var(--om-text-3)' }} />
+                <input
+                  type="text"
+                  value={headerQuery}
+                  onChange={(e) => setHeaderQuery(e.target.value)}
+                  placeholder="Search any card, set, or player..."
+                  className="flex h-10 md:h-11 w-full rounded-xl pl-10 pr-3 text-sm transition-all om-input"
+                />
+              </div>
+            </form>
+          )}
           <button
             onClick={toggleTheme}
             className="om-btn flex items-center justify-center h-10 w-10 rounded-xl transition-colors"
