@@ -384,27 +384,7 @@ export default function Index() {
                 </span>
               </Link>
 
-              {/* Sports — secondary tile */}
-              <Link
-                to="/sports"
-                className="group rounded-2xl px-8 py-6 hover:-translate-y-[2px] transition-all duration-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
-                style={{
-                  background: 'var(--om-bg-1)',
-                  border: '1px solid var(--om-border-0)',
-                  transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
-                }}
-              >
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-[14px] font-semibold" style={{ color: 'var(--om-text-0)' }}>Sports Market</h3>
-                    <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide" style={{ background: 'rgba(255,180,0,0.12)', color: 'rgb(200,150,0)' }}>Beta</span>
-                  </div>
-                  <p className="text-[12px]" style={{ color: 'var(--om-text-3)' }}>NBA · NFL · MLB — filter by player, brand, and traits</p>
-                </div>
-                <span className="inline-flex items-center gap-1.5 text-sm font-medium shrink-0" style={{ color: 'var(--om-text-2)' }}>
-                  View <ChevronRight className="h-4 w-4" />
-                </span>
-              </Link>
+              {/* Sports tile hidden for launch — set SHOW_SPORTS=true in TabNavigation to restore */}
             </div>
           </div>
         )}

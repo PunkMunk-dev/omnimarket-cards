@@ -6,9 +6,12 @@ import { useTheme } from 'next-themes';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { WatchlistDropdown } from '@/components/WatchlistDropdown';
 
+// Set to true to re-enable Sports tab for launch
+const SHOW_SPORTS = false;
+
 const tabs = [
   { to: '/tcg', label: 'TCG Market', shortLabel: 'TCG', beta: false },
-  { to: '/sports', label: 'Sports', shortLabel: 'Sports', beta: true },
+  ...(SHOW_SPORTS ? [{ to: '/sports', label: 'Sports', shortLabel: 'Sports', beta: true }] : []),
 ];
 
 export function TabNavigation() {
