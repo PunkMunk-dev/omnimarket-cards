@@ -1,0 +1,32 @@
+{
+  "name": "@omnimarket/workers",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev:worker": "tsx watch src/worker.ts",
+    "worker:start": "node --experimental-specifier-resolution=node dist/worker.js",
+    "worker:once": "tsx src/worker-once.ts",
+    "worker:scheduler": "tsx src/scheduler.ts",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@omnimarket/shared": "*",
+    "@supabase/supabase-js": "^2.90.1",
+    "bullmq": "^5.51.1",
+    "ioredis": "^5.6.1",
+    "pino": "^9.7.0",
+    "pino-pretty": "^13.0.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^22.16.5",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3"
+  }
+}

@@ -3,6 +3,10 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "workspaces": [
+    "packages/*",
+    "services/*"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -10,7 +14,13 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "typecheck": "tsc -p tsconfig.json && npm run typecheck --workspace=packages/shared --workspace=services/workers",
+    "workers:build": "npm run build --workspace=packages/shared && npm run build --workspace=services/workers",
+    "dev:worker": "npm run dev:worker --workspace=services/workers",
+    "worker:start": "npm run worker:start --workspace=services/workers",
+    "worker:once": "npm run worker:once --workspace=services/workers",
+    "worker:scheduler": "npm run worker:scheduler --workspace=services/workers"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
