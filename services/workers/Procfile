@@ -1,0 +1,2 @@
+worker: npm run worker:start
+scheduler: npm run worker:scheduler

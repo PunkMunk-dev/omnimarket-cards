@@ -3,14 +3,30 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "workspaces": [
+    "packages/*",
+    "services/*"
+  ],
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "npm run build:web && npm run build:shared && npm run build:worker",
+    "build:web": "vite build",
+    "build:shared": "npm run -w @cardscout/shared build",
+    "build:worker": "npm run -w @cardscout/workers build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "typecheck": "npm run typecheck:web && npm run -w @cardscout/shared typecheck && npm run -w @cardscout/workers typecheck",
+    "typecheck:web": "tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.node.json --noEmit",
+    "dev:worker": "npm run -w @cardscout/workers dev",
+    "worker:start": "npm run -w @cardscout/workers start",
+    "worker:once": "npm run -w @cardscout/workers once",
+    "worker:scheduler": "npm run -w @cardscout/workers scheduler"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

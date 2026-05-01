@@ -1,167 +1,189 @@
 # Card Scout Live
 
-A trading card market intelligence app for sports cards and TCG (Pokémon, One Piece, etc.).
-Searches active eBay listings, surfaces PSA 10 sold comps, and estimates grading profit.
+A trading card market intelligence app for sports cards and TCG (Pokemon, One Piece, etc.).
+Searches active eBay listings, surfaces PSA sold comps, and estimates grading profit.
 
-Built with **Vite + React 18 + TypeScript + Tailwind + shadcn/ui**, backed by **Supabase** (Postgres, Auth, Edge Functions) and the **eBay Browse API**.
+Built with **Vite + React + TypeScript + Tailwind**, backed by **Supabase** and now a production-ready background processing layer using **Redis + BullMQ** workers.
+
+---
+
+## Architecture overview
+
+This repository now uses a split architecture designed for production deployments:
+
+- **Frontend**: Vercel-hosted Vite/React app (kept isolated from service-role secrets)
+- **Primary backend**: Supabase (Postgres, Auth, Edge Functions)
+- **Async workers**: `services/workers` Node 20 service (Railway/Fly compatible)
+- **Queue layer**: Redis + BullMQ
+- **Shared contracts**: `packages/shared` TypeScript job payload/result types
+- **Automation layer**: Cursor Cloud Agents for engineering automation workflows
+
+### Separation guarantees
+
+- Frontend consumes only `VITE_*` env vars.
+- `SUPABASE_SERVICE_ROLE_KEY` is used exclusively in `services/workers`.
+- Workers are separate from Supabase Edge Functions and deploy independently.
 
 ---
 
 ## Prerequisites
 
-- **Node.js 18+** (or **Bun 1.0+**)
-- **npm**, **pnpm**, **bun**, or **yarn**
-- A **Supabase project** (free tier works)
-- An **eBay Developer account** with Production keys ([developer.ebay.com](https://developer.ebay.com))
-- *(Optional)* **Supabase CLI** if you want to deploy edge functions locally: `npm i -g supabase`
-
----
-
-## Quick start
-
-```bash
-# 1. Install dependencies
-npm install
-# or: bun install / pnpm install
-
-# 2. Create your env file (see below)
-cp .env.example .env
-# then edit .env with your Supabase project values
-
-# 3. Start the dev server
-npm run dev
-```
-
-The app will be available at [http://localhost:8080](http://localhost:8080).
+- **Node.js 20+**
+- **npm**
+- **Redis** instance
+- A **Supabase project**
+- (optional) Railway or Fly account for worker hosting
 
 ---
 
 ## Environment variables
 
-Create a `.env` file in the project root with the following keys. **Only the `VITE_*` keys are needed for the frontend** — the rest are configured as secrets inside your Supabase project (see next section).
+Copy and fill in the root env file:
 
-```env
-# Frontend (Vite) — required
-VITE_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY=eyJhbGciOi...your-anon-key...
-VITE_SUPABASE_PROJECT_ID=YOUR_PROJECT_REF
+```bash
+cp .env.example .env
 ```
 
-You can find these values in your Supabase dashboard under **Project Settings → API**.
+### Frontend env vars (Vercel-safe)
 
-> The `VITE_SUPABASE_PUBLISHABLE_KEY` is the public anon key — safe to ship in the bundle.
-> Never commit a service-role key to the frontend.
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+
+### Worker-only env vars (never expose to client)
+
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `REDIS_URL`
+- Worker concurrency/retry/backoff/scheduler variables in `.env.example`
 
 ---
 
-## Supabase setup
-
-### 1. Apply the database schema
-
-Migrations live in `supabase/migrations/`. Apply them using either:
+## Local development
 
 ```bash
-# Option A: Supabase CLI (recommended)
-supabase link --project-ref YOUR_PROJECT_REF
-supabase db push
-
-# Option B: Manually run each .sql file in the Supabase SQL editor
+npm install
 ```
 
-### 2. Configure secrets for edge functions
-
-The edge functions need access to the eBay API. Add these as secrets in your Supabase project (**Project Settings → Edge Functions → Secrets**):
-
-| Secret name             | Description                                       | Where to get it                      |
-| ----------------------- | ------------------------------------------------- | ------------------------------------ |
-| `EBAY_CLIENT_ID`        | eBay Production App ID (Client ID)                | developer.ebay.com → My Account → Keysets |
-| `EBAY_CLIENT_SECRET`    | eBay Production Cert ID (Client Secret)           | developer.ebay.com → My Account → Keysets |
-| `LOVABLE_API_KEY`       | *(optional)* For AI gateway features              | Lovable AI dashboard                 |
-| `RAPIDAPI_KEY`          | *(optional)* PSA population scraping              | rapidapi.com                         |
-| `XIMILAR_API_TOKEN`     | *(optional)* Card image recognition               | ximilar.com                          |
-
-`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, and `SUPABASE_DB_URL` are injected automatically by Supabase — no need to set them manually.
-
-### 3. Deploy edge functions
+### Run frontend
 
 ```bash
-supabase functions deploy sports-ebay-search
-supabase functions deploy sports-ebay-sold-psa
-supabase functions deploy sports-ebay-psa10-active
-supabase functions deploy sports-ebay-gem-rate
-supabase functions deploy tcg-ebay-search
-supabase functions deploy ebay-search
+npm run dev
 ```
 
-Or deploy all at once:
+### Run worker service
 
 ```bash
-supabase functions deploy
+npm run dev:worker
+```
+
+### Register scheduled jobs
+
+```bash
+npm run worker:scheduler
+```
+
+### Enqueue a single sample job
+
+```bash
+npm run worker:once
+# or choose queue
+npm run worker:once -- odds-ingestion
 ```
 
 ---
 
-## Available scripts
+## Worker package details
 
-| Command             | What it does                                       |
-| ------------------- | -------------------------------------------------- |
-| `npm run dev`       | Start the Vite dev server with HMR (port 8080)     |
-| `npm run build`     | Production build to `dist/`                        |
-| `npm run build:dev` | Development-mode build (unminified, source maps)   |
-| `npm run preview`   | Preview the production build locally               |
-| `npm run lint`      | Run ESLint across the codebase                     |
-| `npm run test`      | Run the Vitest suite once                          |
-| `npm run test:watch`| Run Vitest in watch mode                           |
+Worker service lives in:
+
+```text
+services/workers/
+```
+
+Key components:
+
+- `src/config/env.ts` - zod env validation
+- `src/lib/logger.ts` - structured pino logging
+- `src/lib/redis.ts` - Redis connection helpers
+- `src/lib/supabase.ts` - service-role Supabase client helper
+- `src/queues/*` - BullMQ queue setup/options/registry
+- `src/jobs/*` - job routing + handlers + dead-letter publishing
+- `src/scheduler/*` - recurring schedule definitions and registration
+- `src/entrypoints/worker.ts` - worker runtime
+- `src/entrypoints/scheduler.ts` - schedule registration entrypoint
+- `src/entrypoints/worker-once.ts` - single-run enqueue helper
+
+### Included example jobs
+
+- ebay saved-search refresh
+- PSA spread calculation
+- odds ingestion
+- EV calculation
+- lead scraping
+- Slack alert dispatch
+
+### Reliability patterns implemented
+
+- Retry with exponential backoff
+- Dead-letter queue for exhausted retries
+- Graceful shutdown with timeout
+- Structured logs with queue/job context
+
+---
+
+## Deployment
+
+### Frontend (Vercel)
+
+Deploy the existing frontend as-is on Vercel using your current project setup.
+
+### Workers (Railway)
+
+Worker deployment files are in `services/workers/`:
+
+- `railway.json`
+- `Procfile`
+
+Recommended start command:
+
+```bash
+npm run worker:start
+```
+
+To run scheduler as a separate process/service:
+
+```bash
+npm run worker:scheduler
+```
+
+### Workers (Fly)
+
+`services/workers/fly.toml` and `services/workers/Dockerfile` are included as a Fly-compatible baseline.
+
+---
+
+## Scripts
+
+### Root scripts
+
+- `npm run dev` - frontend dev server
+- `npm run build` - frontend + shared + worker build
+- `npm run typecheck` - frontend + shared + worker typecheck
+- `npm run dev:worker`
+- `npm run worker:start`
+- `npm run worker:once`
+- `npm run worker:scheduler`
 
 ---
 
 ## Project structure
 
+```text
+src/                        # Vite frontend
+supabase/                   # Supabase migrations + edge functions
+packages/shared/            # Shared TypeScript job contracts
+services/workers/           # Node 20 worker service
 ```
-src/
-├── components/         # UI components (shadcn/ui + custom)
-│   ├── sports-lab/     # Sports cards search & results
-│   ├── tcg-lab/        # TCG (Pokémon, One Piece) search
-│   └── ui/             # shadcn/ui primitives
-├── pages/              # Route components (Index, SportsLab, TcgLab)
-├── hooks/              # React hooks (useSportsEbaySearch, useTcgData, …)
-├── contexts/           # React context providers (watchlists)
-├── lib/                # Pure utilities (cleanTitle, ebay-api, etc.)
-├── services/           # Service layer wrapping edge function calls
-├── types/              # Shared TypeScript types
-└── integrations/
-    └── supabase/       # Auto-generated Supabase client + types
-
-supabase/
-├── functions/          # Deno edge functions (eBay search, PSA scraping)
-├── migrations/         # SQL migrations (schema, RLS policies)
-└── config.toml         # Supabase project config
-```
-
----
-
-## Tech stack
-
-- **Frontend**: React 18, Vite 5, TypeScript 5, Tailwind 3, shadcn/ui, React Router 6, TanStack Query
-- **Backend**: Supabase (Postgres + RLS), Deno edge functions
-- **APIs**: eBay Browse API (OAuth2), optional Ximilar / RapidAPI / Lovable AI
-- **Testing**: Vitest + Testing Library
-
----
-
-## Troubleshooting
-
-**Edge functions return 500 with "EBAY_CLIENT_ID is not configured"**
-→ Add `EBAY_CLIENT_ID` and `EBAY_CLIENT_SECRET` as secrets in your Supabase project.
-
-**Search returns 429 "rate limit exceeded"**
-→ eBay throttles per app. Wait 60 seconds. If it persists, check your Production keyset isn't accidentally using Sandbox credentials.
-
-**`Failed to fetch` from the frontend**
-→ Verify `VITE_SUPABASE_URL` matches your project, and that the edge functions are deployed.
-
-**Vite dev server won't start on port 8080**
-→ Edit the `server.port` value in `vite.config.ts` or run `npm run dev -- --port 3000`.
 
 ---
 

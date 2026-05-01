@@ -1,0 +1,16 @@
+app = "cardscout-workers"
+primary_region = "iad"
+
+[build]
+dockerfile = "services/workers/Dockerfile"
+
+[env]
+NODE_ENV = "production"
+
+[processes]
+worker = "npm run worker:start"
+
+[[vm]]
+memory = "1gb"
+cpu_kind = "shared"
+cpus = 1
